@@ -17,15 +17,15 @@
 
 先明确任务范围、权威依据和可写目录，只修改当前任务涉及的内容。设计或修改 Skill 时保留有效方法、职责边界和检查要求，各 Skill 自带必要专业资源，不引用其他 Skill，不复制整套宿主行为规范。
 
-按改动类型执行下列验证，检查受影响的链接、JSON、Python/YAML 语法和工作区差异。
+按改动类型执行下列验证，检查受影响的链接、JSON、YAML 与脚本语法和工作区差异。
 
-文档修改保留有效内容与必要依据，删除或迁移时同步清理引用。Markdown 使用一个一级标题、连续的标题层级、带语言标识的代码块和 UTF-8/LF 格式；检查器位于 `scripts/knowledge_lint.py`。
+文档修改保留有效内容与必要依据，删除或迁移时同步清理引用。通用 Markdown 规范由全局 Skill 负责，仓库不维护通用文档检查器。
 
 部署路径和凭据不写入共享源码。提交、推送和发布遵循用户的具体授权。
 
 ## 本地验证
 
-统一入口为 `scripts/verify.sh`，包含下列 Go 检查、架构图 JavaScript 交互测试、脚本语法、文档检查、六平台构建，以及插件打包与 DSH 集成测试；任一步失败立即退出。构建、打包和插件使用同一个版本值。开发验证需要 Node.js 18+，发布二进制不依赖 Node.js。
+统一入口为 `apps/reed/scripts/verify.sh`，包含下列 Go 检查、架构图 JavaScript 交互测试、脚本语法、六平台构建，以及插件打包与 DSH 集成测试；任一步失败立即退出。构建、打包和插件使用同一个版本值。开发验证需要 Node.js 18+，发布二进制不依赖 Node.js。
 
 命令从仓库根目录执行。修改 Go 代码后检查格式、运行测试与竞态检测、执行 vet，并构建六平台产物：
 
@@ -48,13 +48,12 @@ apps/reed/scripts/build-release.sh
 修改安装或构建脚本时运行：
 
 ```bash
-bash -n apps/reed/scripts/build-release.sh plugins/build.sh scripts/verify.sh
+bash -n apps/reed/scripts/build-release.sh plugins/build.sh apps/reed/scripts/verify.sh
 ```
 
 修改文档后运行：
 
 ```bash
-python3 -B scripts/knowledge_lint.py --changed
 git diff --check
 ```
 

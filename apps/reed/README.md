@@ -70,10 +70,10 @@ reed scope readonly --root /absolute/project
 
 ```bash
 go generate ./...
-../../scripts/verify.sh
+scripts/verify.sh
 ```
 
-统一验证入口需要 Node.js 18+ 与 Python 3，依次执行两套 Go 模块的竞态测试与 vet、架构图交互逻辑测试、格式及文档检查、六平台构建、插件打包与 DSH 集成测试。缺少工具或任一检查失败均返回非零，不跳过交互测试；可用 `NODE_BINARY`、`PYTHON_BINARY` 指定开发工具路径。浏览器实际交互仍需人工或浏览器验收，Node 测试不替代该验证。
+统一验证入口需要 Go、Git 和 Node.js 18+，依次执行 reed 的竞态测试与 vet、架构图交互逻辑测试、Go 格式与脚本语法检查、六平台构建、插件打包与 DSH 集成测试。缺少工具或任一检查失败均返回非零，不跳过交互测试；可用 `NODE_BINARY` 指定开发工具路径。浏览器实际交互仍需人工或浏览器验收，Node 测试不替代该验证。
 
 Schema 从 CLI 自有的 `resources/artifact-schemas/` 与 `resources/system-design/schema.json` 生成并编入二进制；测试检查生成来源一致性、单个 Skill 的资源闭包（含 contract 引用不越出自身目录），以及 Skill 参考副本与 CLI 资源、`docs/app-design.md`、`docs/distribution-design.md` 中对应章节的漂移。生成文件不可手改。
 

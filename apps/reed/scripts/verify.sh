@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
-# Repository verification: Go, browser-script logic, source hygiene and release builds.
+# reed verification: Go, browser-script logic, source hygiene and release builds.
 set -euo pipefail
-root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "$root"
 node_binary="${NODE_BINARY:-node}"
-python_binary="${PYTHON_BINARY:-python3}"
-for executable in go git "$node_binary" "$python_binary"; do
+for executable in go git "$node_binary"; do
   command -v "$executable" >/dev/null || { echo "Missing verification dependency: $executable" >&2; exit 1; }
 done
 
@@ -19,8 +18,7 @@ for module in apps/reed; do
   (cd "$module" && go test -race ./... && go vet ./...)
 done
 "$node_binary" --test apps/reed/internal/systemdesign/*_test.cjs
-bash -n scripts/verify.sh apps/reed/scripts/build-release.sh
-"$python_binary" -B scripts/knowledge_lint.py --changed
+bash -n apps/reed/scripts/verify.sh apps/reed/scripts/build-release.sh plugins/build.sh
 git diff --check
 
 # One version drives reed and the plugin bundle, because
