@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/AwayerCode/Harn/apps/swe-cli/internal/app"
+	"github.com/AwayerCode/ReedHarness/apps/swe-cli/internal/app"
 	"os"
 )
 

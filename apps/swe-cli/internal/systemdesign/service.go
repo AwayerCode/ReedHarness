@@ -56,13 +56,13 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	switch r.URL.Path {
 	case "/":
-		http.Redirect(w, r, "/harn/", http.StatusTemporaryRedirect)
-	case "/harn/health":
+		http.Redirect(w, r, "/reed/", http.StatusTemporaryRedirect)
+	case "/reed/health":
 		w.Header().Set("Content-Type", "application/json")
 		if r.Method == "GET" {
-			_ = json.NewEncoder(w).Encode(map[string]string{"service": "harn", "version": s.version, "root": s.root})
+			_ = json.NewEncoder(w).Encode(map[string]string{"service": "reed", "version": s.version, "root": s.root})
 		}
-	case "/harn/resolve":
+	case "/reed/resolve":
 		cwd := r.URL.Query().Get("cwd")
 		if !filepath.IsAbs(cwd) {
 			http.Error(w, "absolute session directory required", 400)
@@ -80,9 +80,9 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		if r.Method == "GET" {
-			_ = json.NewEncoder(w).Encode(map[string]string{"url": "/harn/view?project=" + url.QueryEscape(filepath.ToSlash(rel))})
+			_ = json.NewEncoder(w).Encode(map[string]string{"url": "/reed/view?project=" + url.QueryEscape(filepath.ToSlash(rel))})
 		}
-	case "/harn/":
+	case "/reed/":
 		discovery, err := Discover(s.root)
 		if err != nil {
 			http.Error(w, err.Error(), 503)
@@ -101,7 +101,7 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				Issues  []DiscoveryIssue
 			}{entries, discovery.Issues})
 		}
-	case "/harn/view", "/harn/state":
+	case "/reed/view", "/reed/state":
 		project := r.URL.Query().Get("project")
 		if project == "" {
 			project = "."
@@ -131,4 +131,4 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-var serviceIndex = template.Must(template.New("projects").Parse(`<!doctype html><html lang="zh"><meta charset="utf-8"><title>Harn</title><body><h1>Harn 架构</h1><ul>{{range .Entries}}<li><a href="{{.URL}}">{{.Name}}</a></li>{{else}}<li>工作区尚无 system-design.yaml</li>{{end}}</ul>{{range .Issues}}<p>{{.Path}}: {{.Message}}</p>{{end}}</body></html>`))
+var serviceIndex = template.Must(template.New("projects").Parse(`<!doctype html><html lang="zh"><meta charset="utf-8"><title>ReedHarness</title><body><h1>ReedHarness 架构</h1><ul>{{range .Entries}}<li><a href="{{.URL}}">{{.Name}}</a></li>{{else}}<li>工作区尚无 system-design.yaml</li>{{end}}</ul>{{range .Issues}}<p>{{.Path}}: {{.Message}}</p>{{end}}</body></html>`))

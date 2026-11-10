@@ -13,7 +13,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/AwayerCode/Harn/apps/harn/internal/source"
+	"github.com/AwayerCode/ReedHarness/apps/reed/internal/source"
 )
 
 type Skill struct {
@@ -36,7 +36,7 @@ func (m Manager) Search(ctx context.Context, rawSource, version, query string) (
 	if err != nil {
 		return nil, err
 	}
-	stage, err := os.MkdirTemp("", "harn-search-*")
+	stage, err := os.MkdirTemp("", "reed-search-*")
 	if err != nil {
 		return nil, fmt.Errorf("create staging directory: %w", err)
 	}

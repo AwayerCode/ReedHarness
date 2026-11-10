@@ -8,8 +8,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/AwayerCode/Harn/apps/harn/internal/app"
-	"github.com/AwayerCode/Harn/apps/harn/internal/buildinfo"
+	"github.com/AwayerCode/ReedHarness/apps/reed/internal/app"
+	"github.com/AwayerCode/ReedHarness/apps/reed/internal/buildinfo"
 )
 
 func main() {

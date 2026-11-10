@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/AwayerCode/Harn/apps/swe-cli/internal/systemdesign"
+	"github.com/AwayerCode/ReedHarness/apps/swe-cli/internal/systemdesign"
 )
 
 func TestPreviewArgumentsRejectBypasses(t *testing.T) {
@@ -96,7 +96,7 @@ func TestPreviewServerWriteTimeoutCoversRendering(t *testing.T) {
 }
 
 func TestPreviewCommandProcess(t *testing.T) {
-	if raw := os.Getenv("HARN_PREVIEW_TEST_ARGS"); raw != "" {
+	if raw := os.Getenv("REED_PREVIEW_TEST_ARGS"); raw != "" {
 		var args []string
 		if err := json.Unmarshal([]byte(raw), &args); err != nil {
 			os.Exit(2)
@@ -126,7 +126,7 @@ func TestPreviewReuseDoesNotRenderCurrentYAML(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	first := exec.CommandContext(ctx, binary, "-test.run=^TestPreviewCommandProcess$")
-	first.Env = append(os.Environ(), "HARN_PREVIEW_TEST_ARGS="+string(raw))
+	first.Env = append(os.Environ(), "REED_PREVIEW_TEST_ARGS="+string(raw))
 	pipe, err := first.StdoutPipe()
 	if err != nil {
 		t.Fatal(err)
@@ -179,7 +179,7 @@ func testPreviewCommand(t *testing.T, args []string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, binary, "-test.run=^TestPreviewCommandProcess$")
-	cmd.Env = append(os.Environ(), "HARN_PREVIEW_TEST_ARGS="+string(raw))
+	cmd.Env = append(os.Environ(), "REED_PREVIEW_TEST_ARGS="+string(raw))
 	pipe, err := cmd.StdoutPipe()
 	if err != nil {
 		t.Fatal(err)

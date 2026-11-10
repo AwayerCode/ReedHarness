@@ -29,7 +29,7 @@ adoption 维护项目接入记录、必要的 Agent 指引引用和检查入口�
 
 1. 首次接入或为已有代码建立／修订 YAML：读取[已有项目与 YAML](references/existing-project.md)。已有 YAML 默认保留为权威依据，不从当前代码覆盖重建。
 2. 更新 SWE 或退出项目：读取[更新与退出](references/lifecycle.md)。工具生命周期与项目产物生命周期分开处理。
-3. 工具定位、版本绑定、命令和结果：复用 [CLI 约定](../references/cli.md)。harn 只分发所选资源；swe-cli 检查已编码规则；Agent 作专业判断；项目工具验证行为。本能力不提供自动生成器、候选设计预演或新的 CLI 命令。
+3. 工具定位、版本绑定、命令和结果：复用 [CLI 约定](../references/cli.md)。reed 只分发所选资源；swe-cli 检查已编码规则；Agent 作专业判断；项目工具验证行为。本能力不提供自动生成器、候选设计预演或新的 CLI 命令。
 
 ## 完成证据
 

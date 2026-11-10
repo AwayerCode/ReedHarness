@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/AwayerCode/Harn/apps/swe-cli/internal/checks"
-	"github.com/AwayerCode/Harn/apps/swe-cli/internal/workspace"
+	"github.com/AwayerCode/ReedHarness/apps/swe-cli/internal/checks"
+	"github.com/AwayerCode/ReedHarness/apps/swe-cli/internal/workspace"
 	"path/filepath"
 )
 

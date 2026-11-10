@@ -32,28 +32,28 @@ func TestServiceProjectsRefreshAndBoundaries(t *testing.T) {
 		service.ServeHTTP(response, request)
 		return response
 	}
-	if response := get("/harn/"); response.Code != 200 || !strings.Contains(response.Body.String(), "view?project=project") {
+	if response := get("/reed/"); response.Code != 200 || !strings.Contains(response.Body.String(), "view?project=project") {
 		t.Fatal(response)
 	}
-	response := get("/harn/view?project=project")
-	resolved := get("/harn/resolve?cwd=" + url.QueryEscape(project))
+	response := get("/reed/view?project=project")
+	resolved := get("/reed/resolve?cwd=" + url.QueryEscape(project))
 	if resolved.Code != 200 || !strings.Contains(resolved.Body.String(), "project=project") {
 		t.Fatal(resolved)
 	}
-	if get("/harn/resolve?cwd="+url.QueryEscape(t.TempDir())).Code != 403 {
+	if get("/reed/resolve?cwd="+url.QueryEscape(t.TempDir())).Code != 403 {
 		t.Fatal("outside session accepted")
 	}
-	if get("/harn/resolve?cwd=relative").Code != 400 {
+	if get("/reed/resolve?cwd=relative").Code != 400 {
 		t.Fatal("relative session accepted")
 	}
 	alias := filepath.Join(root, "alias")
 	if err := os.Symlink(project, alias); err == nil {
-		if result := get("/harn/resolve?cwd=" + url.QueryEscape(alias)); result.Code != 200 || result.Body.String() != resolved.Body.String() {
+		if result := get("/reed/resolve?cwd=" + url.QueryEscape(alias)); result.Code != 200 || result.Body.String() != resolved.Body.String() {
 			t.Fatal(result)
 		}
 	}
 	if runtime.GOOS == "windows" {
-		if result := get("/harn/resolve?cwd=" + url.QueryEscape(strings.ToUpper(project))); result.Code != 200 {
+		if result := get("/reed/resolve?cwd=" + url.QueryEscape(strings.ToUpper(project))); result.Code != 200 {
 			t.Fatal(result)
 		}
 	}
@@ -62,7 +62,7 @@ func TestServiceProjectsRefreshAndBoundaries(t *testing.T) {
 	}
 	state := func() map[string]any {
 		result := map[string]any{}
-		if err := json.Unmarshal(get("/harn/state?project=project").Body.Bytes(), &result); err != nil {
+		if err := json.Unmarshal(get("/reed/state?project=project").Body.Bytes(), &result); err != nil {
 			t.Fatal(err)
 		}
 		return result
@@ -77,10 +77,10 @@ func TestServiceProjectsRefreshAndBoundaries(t *testing.T) {
 	if state()["valid"] != false {
 		t.Fatal("stale valid state")
 	}
-	if get("/harn/view?project=project").Code == 200 {
+	if get("/reed/view?project=project").Code == 200 {
 		t.Fatal("served stale HTML")
 	}
-	if !strings.Contains(get("/harn/view?project=project").Header().Get("Content-Security-Policy"), "frame-ancestors 'self'") {
+	if !strings.Contains(get("/reed/view?project=project").Header().Get("Content-Security-Policy"), "frame-ancestors 'self'") {
 		t.Fatal("diagnostics cannot be embedded")
 	}
 	if err := os.WriteFile(file, data, 0600); err != nil {
@@ -89,19 +89,19 @@ func TestServiceProjectsRefreshAndBoundaries(t *testing.T) {
 	if state()["valid"] != true || state()["revision"] != before["revision"] {
 		t.Fatal("recovery failed")
 	}
-	for _, path := range []string{"/harn/view?project=..", "/harn/view?project=/etc", "/harn/view?project=.git"} {
+	for _, path := range []string{"/reed/view?project=..", "/reed/view?project=/etc", "/reed/view?project=.git"} {
 		if get(path).Code != 403 {
 			t.Fatal(path)
 		}
 	}
 	outside := t.TempDir()
 	if err := os.Symlink(outside, filepath.Join(root, "escape")); err == nil {
-		if get("/harn/view?project=escape").Code != 403 {
+		if get("/reed/view?project=escape").Code != 403 {
 			t.Fatal("symlink escaped")
 		}
 	}
 	for _, kind := range []string{"host", "method", "origin"} {
-		request := httptest.NewRequest("GET", "http://127.0.0.1:47831/harn/", nil)
+		request := httptest.NewRequest("GET", "http://127.0.0.1:47831/reed/", nil)
 		switch kind {
 		case "host":
 			request.Host = "attacker.test"

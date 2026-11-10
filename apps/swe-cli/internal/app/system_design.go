@@ -3,7 +3,7 @@ package app
 import (
 	"errors"
 	"flag"
-	"github.com/AwayerCode/Harn/apps/swe-cli/internal/systemdesign"
+	"github.com/AwayerCode/ReedHarness/apps/swe-cli/internal/systemdesign"
 	"io"
 	"path/filepath"
 )

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-// List discovers local Skills, including ones installed without harn. It does
+// List discovers local Skills, including ones installed without reed. It does
 // not infer their source revision or verify changes against an absent record.
 func (m Manager) List() ([]Skill, error) {
 	root := filepath.Join(m.ProjectRoot, ".agents", "skills")

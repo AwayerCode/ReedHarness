@@ -1,4 +1,4 @@
-module github.com/AwayerCode/Harn/apps/swe-cli
+module github.com/AwayerCode/ReedHarness/apps/swe-cli
 
 go 1.24.0
 

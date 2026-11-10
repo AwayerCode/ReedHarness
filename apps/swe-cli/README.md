@@ -1,6 +1,6 @@
 # SWE CLI
 
-固定地址、多项目实时服务使用 `swe-cli system-design serve --root <工作区> --expect-version <版本>`，浏览器访问 `http://127.0.0.1:47831/harn/`。DSH 使用同源固定路径代理，静态导出继续使用 `render`。详见[插件分发与架构服务](../../docs/plugin-distribution.md)。
+固定地址、多项目实时服务使用 `swe-cli system-design serve --root <工作区> --expect-version <版本>`，浏览器访问 `http://127.0.0.1:47831/reed/`。DSH 使用同源固定路径代理，静态导出继续使用 `render`。详见[插件分发与架构服务](../../docs/plugin-distribution.md)。
 
 [系统设计](../../docs/system-design.md)中的确定性校验核心。通用核心负责 YAML、目录、文件归属与模块关系；语言适配器负责解释源码中的导入或引用。Skill 保存方法与规范，业务测试和构建仍由 Agent 按项目约定调用。
 
@@ -93,8 +93,8 @@ SWE 不单独发布 CLI。`scripts/build-package.sh <版本>` 构建 macOS、Lin
 
 每个压缩包包含完整 `skills/swe/`、本平台 `bin/swe-cli`（Windows 为 `.exe`）和生成的 `runtime.json`。清单包含 schema_version、工具名称、版本和本平台 SHA256，不包含 URL；源目录不保存生成清单。各领域共用包根的 CLI，打包不修改源码或自动执行 go generate。
 
-仓库仅创建 Harn Release。`../harn/scripts/build-release.sh <版本>` 统一构建 harn 与上述 Skill 包，将 harn 二进制、六个平台 Skill 包及统一 SHA256SUMS 写入 Harn 发行目录。上传这些资源，不另建 swe-cli Release，也不上传裸 swe-cli 二进制。重新构建必须使用配套生成的新包和摘要。
+仓库仅创建 ReedHarness Release。`../reed/scripts/build-release.sh <版本>` 统一构建 reed 与上述 Skill 包，将 reed 二进制、六个平台 Skill 包及统一 SHA256SUMS 写入 ReedHarness 发行目录。上传这些资源，不另建 swe-cli Release，也不上传裸 swe-cli 二进制。重新构建必须使用配套生成的新包和摘要。
 
-harn 只下载并安装 Skill 包，不解析运行时清单或发起 CLI 下载。CLI 从 Skill 的 bin 目录启动时按包内清单核对版本和自身摘要；选择错误平台的包无法运行。已有目录拒绝覆盖，换版先安装到临时项目并对比，再显式替换。
+reed 只下载并安装 Skill 包，不解析运行时清单或发起 CLI 下载。CLI 从 Skill 的 bin 目录启动时按包内清单核对版本和自身摘要；选择错误平台的包无法运行。已有目录拒绝覆盖，换版先安装到临时项目并对比，再显式替换。
 
-包内容与安装行为已有本地测试；远端安装需先发布 Harn 及完整包。六平台构建不等于实机运行验证，当前实际运行覆盖 macOS arm64；最低系统版本仍需发行验收。
+包内容与安装行为已有本地测试；远端安装需先发布 ReedHarness 及完整包。六平台构建不等于实机运行验证，当前实际运行覆盖 macOS arm64；最低系统版本仍需发行验收。

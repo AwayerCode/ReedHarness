@@ -32,7 +32,7 @@ func TestBootstrapRunsTemporarilyAndPropagatesFailure(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			payload := []byte("#!/bin/sh\nprintf '%s\\n' \"$0\" \"$PWD\" \"$@\" > \"$HARN_TEST_LOG\"\nexit \"$HARN_TEST_EXIT\"\n")
+			payload := []byte("#!/bin/sh\nprintf '%s\\n' \"$0\" \"$PWD\" \"$@\" > \"$REED_TEST_LOG\"\nexit \"$REED_TEST_EXIT\"\n")
 			payloadPath := filepath.Join(root, "payload")
 			if err := os.WriteFile(payloadPath, payload, 0644); err != nil {
 				t.Fatal(err)
@@ -43,7 +43,7 @@ func TestBootstrapRunsTemporarilyAndPropagatesFailure(t *testing.T) {
 			}
 			var sums strings.Builder
 			for _, platform := range []string{"darwin_amd64", "darwin_arm64", "linux_amd64", "linux_arm64"} {
-				fmt.Fprintf(&sums, "%s  harn_%s\n", digest, platform)
+				fmt.Fprintf(&sums, "%s  reed_%s\n", digest, platform)
 			}
 			sumsPath := filepath.Join(root, "sums")
 			if err := os.WriteFile(sumsPath, []byte(sums.String()), 0644); err != nil {
@@ -53,8 +53,8 @@ func TestBootstrapRunsTemporarilyAndPropagatesFailure(t *testing.T) {
 url="$2"
 destination="$4"
 case "$url" in
- */SHA256SUMS) cp "$HARN_TEST_SUMS" "$destination" ;;
- *) cp "$HARN_TEST_PAYLOAD" "$destination" ;;
+ */SHA256SUMS) cp "$REED_TEST_SUMS" "$destination" ;;
+ *) cp "$REED_TEST_PAYLOAD" "$destination" ;;
 esac
 `
 			if err := os.WriteFile(filepath.Join(bin, "curl"), []byte(curl), 0755); err != nil {
@@ -66,7 +66,7 @@ esac
 			}
 			log := filepath.Join(root, "invocation")
 			cmd := exec.Command("sh", script, "--root", project, "--", "install", "--path", "skills/a b")
-			cmd.Env = append(os.Environ(), "PATH="+bin+string(os.PathListSeparator)+os.Getenv("PATH"), "TMPDIR="+scratch, "HARN_TEST_PAYLOAD="+payloadPath, "HARN_TEST_SUMS="+sumsPath, "HARN_TEST_LOG="+log, "HARN_TEST_EXIT="+scenario.exit)
+			cmd.Env = append(os.Environ(), "PATH="+bin+string(os.PathListSeparator)+os.Getenv("PATH"), "TMPDIR="+scratch, "REED_TEST_PAYLOAD="+payloadPath, "REED_TEST_SUMS="+sumsPath, "REED_TEST_LOG="+log, "REED_TEST_EXIT="+scenario.exit)
 			output, err := cmd.CombinedOutput()
 			want := 0
 			if scenario.badHash {

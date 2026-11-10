@@ -13,7 +13,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/AwayerCode/Harn/apps/harn/internal/source"
+	"github.com/AwayerCode/ReedHarness/apps/reed/internal/source"
 )
 
 type Manager struct {
@@ -29,7 +29,7 @@ type Result struct {
 }
 
 // Install distributes complete Skills without keeping project ownership records.
-// An existing directory is never replaced, even when it was installed by harn.
+// An existing directory is never replaced, even when it was installed by reed.
 func (m *Manager) Install(ctx context.Context, rawSource, version string, requested []string) ([]Result, error) {
 	if m.Client == nil {
 		return nil, errors.New("HTTP client is required")
@@ -54,7 +54,7 @@ func (m *Manager) Install(ctx context.Context, rawSource, version string, reques
 			return nil, err
 		}
 	}
-	stage, err := os.MkdirTemp("", "harn-install-*")
+	stage, err := os.MkdirTemp("", "reed-install-*")
 	if err != nil {
 		return nil, err
 	}

@@ -1,20 +1,20 @@
-# Harn
+# ReedHarness
 
 面向 AI 编程 Agent 的软件工程 Harness。
 
 > 用 YAML 定义架构，用 CLI 校验设计与实现。
 
-Harn 通过 SWE Skill 指导 Agent 完成业务建模、系统设计、代码实现、测试和交付，让代码改动遵循明确的模块边界与依赖规则，并提供可核验的检查结果。
+ReedHarness 通过 SWE Skill 指导 Agent 完成业务建模、系统设计、代码实现、测试和交付，让代码改动遵循明确的模块边界与依赖规则，并提供可核验的检查结果。
 
 插件市场分发与固定地址架构服务正在接入：支持静态 HTML 导出、Go 本地实时服务和 DSH 固定路径代理。构建、运行及待完成的市场验收见[插件分发与架构服务](docs/plugin-distribution.md)。市场安装链路验收前保留现有安装方式。
 
 自有 Skill 保存在 `skills/<名称>/`，第三方 Skill 集中在 `skills/3rdparty/<名称>/`，统一由 `skills/index.json` 登记。两者均安装到 `.agents/skills/<名称>/`；兼容路径与使用方式见[安装指南](docs/usage.md#安装-skill)。
 
-## 为什么需要 Harn
+## 为什么需要 ReedHarness
 
 Agent 能快速编写代码，但架构约定如果只停留在文字里，目录、模块职责和依赖关系就容易在持续修改中发生偏离。测试通过也不代表代码遵守了设计边界。
 
-Harn 将架构约束写入 `system-design.yaml`，让设计和代码有共同的检查依据：哪些模块存在、文件放在哪里、允许依赖谁，都可以显式声明并校验。Skill 提供专业方法与任务边界，项目已有测试和构建继续验证实际行为。
+ReedHarness 将架构约束写入 `system-design.yaml`，让设计和代码有共同的检查依据：哪些模块存在、文件放在哪里、允许依赖谁，都可以显式声明并校验。Skill 提供专业方法与任务边界，项目已有测试和构建继续验证实际行为。
 
 ## 工作方式
 
@@ -86,15 +86,15 @@ modules:
 
 ```bash
 apps/swe-cli/scripts/build-package.sh
-harn_package="$PWD/apps/swe-cli/dist/swe_$(go env GOOS)_$(go env GOARCH).tar.gz"
-harn_demo="$(mktemp -d)"
-mkdir -p "$harn_demo/.agents"
-tar -xzf "$harn_package" -C "$harn_demo/.agents"
-cd "$harn_demo"
+reed_package="$PWD/apps/swe-cli/dist/swe_$(go env GOOS)_$(go env GOARCH).tar.gz"
+reed_demo="$(mktemp -d)"
+mkdir -p "$reed_demo/.agents"
+tar -xzf "$reed_package" -C "$reed_demo/.agents"
+cd "$reed_demo"
 .agents/skills/swe/bin/swe-cli version
 ```
 
-包内已经包含 Skill、平台二进制和版本摘要清单。这里只把选择的 SWE 包解压到新项目，不复制整个 Harn 仓库，也不需要全局安装。
+包内已经包含 Skill、平台二进制和版本摘要清单。这里只把选择的 SWE 包解压到新项目，不复制整个 ReedHarness 仓库，也不需要全局安装。
 
 ### 完成一次检查
 
@@ -125,7 +125,7 @@ SWE 统一安装，按任务选择业务模型、系统设计、代码实现、�
 
 `swe-cli` 提供 YAML 架构、文档、产物关系、目录结构和改动范围检查。YAML 的目录、文件归属与必要文件检查不依赖语言；源码依赖由可选语言适配器检查，当前内置 Go、TypeScript 和 C++。未匹配适配器的语言会明确标记为源码依赖未验证。即使启用适配器，也不验证函数调用、类型语义或业务行为；各适配器的解析限制见 [YAML 规范](skills/swe/references/system-design/guide.md#语言适配器边界)。
 
-`harn` 负责查找与分发选定的 Skill，`swe-cli` 随 SWE 包交付。Harn 不接管 Agent 运行时；当前聚焦独立任务，不提供任务调度器，Bug 修复与需求开发等专门流程暂未建设。
+`reed` 负责查找与分发选定的 Skill，`swe-cli` 随 SWE 包交付。ReedHarness 不接管 Agent 运行时；当前聚焦独立任务，不提供任务调度器，Bug 修复与需求开发等专门流程暂未建设。
 
 ## 文档与贡献
 
