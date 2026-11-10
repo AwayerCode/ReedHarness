@@ -15,10 +15,10 @@ YAML 是采用本规范的项目在层、模块、目录、必要文件和允许
 单份与批量使用相同发现和检查逻辑，包括无效设计文件的失败报告。`validate` 除 Schema 与关系校验外检查已有子作用域边界，不要求源码目录已存在。新增或移动子 YAML 后应重新校验父设计。
 
 ```bash
-swe-cli system-design list --root /absolute/repo
-swe-cli system-design validate --root /absolute/repo --all
-swe-cli system-design check --root /absolute/repo --all
-swe-cli system-design check --file /absolute/repo/apps/api/system-design.yaml
+reed system-design list --root /absolute/repo
+reed system-design validate --root /absolute/repo --all
+reed system-design check --root /absolute/repo --all
+reed system-design check --file /absolute/repo/apps/api/system-design.yaml
 ```
 
 单份结果格式为 `swe-system-design-v1`，含 `scope.file`、`scope.root`、`scope.excluded_scopes`；列表和批量结果为 `swe-system-design-batch-v1`，其中 `scopes` 列出作用域，`list` 的 `results` 固定为空数组；`validate/check --all` 的 `results` 与 `scopes` 数量、顺序及作用域身份一一对应，失败报告也占对应位置。批量退出码优先级为无法检查 2、违规 1、全部通过 0。无法发现或命令参数错误使用单份错误报告。批量结果不能只读取最后一份状态。
@@ -78,9 +78,9 @@ C++ 适配器扫描常见 C/C++ 源文件和头文件扩展名，只识别字面
 4. 运行 `check`，先处理结构与文件归属偏差，再处理已启用语言适配器报告的源码依赖偏差；查看 `unverified` 确认是否存在没有适配器的语言或关系。之后执行范围检查。设计调整由对应设计责任方完成，不通过放宽规则掩盖实现问题。
 
 ```bash
-swe-cli system-design validate --root /absolute/project --file system-design.yaml --profile layers
-swe-cli system-design validate --root /absolute/project --file system-design.yaml
-swe-cli system-design check --root /absolute/project --file system-design.yaml
+reed system-design validate --root /absolute/project --file system-design.yaml --profile layers
+reed system-design validate --root /absolute/project --file system-design.yaml
+reed system-design check --root /absolute/project --file system-design.yaml
 ```
 
 `validate` 与 `check` 输出 JSON。退出码 0 表示本次范围通过，1 表示违规，2 表示无法检查；结果包含设计 SHA256、生成器版本、覆盖范围、未验证项及实际跨模块依赖的文件和行号。检查读取当前文件，不提供原子快照，应在静止工作区运行。
@@ -88,7 +88,7 @@ swe-cli system-design check --root /absolute/project --file system-design.yaml
 `render` 通过设计校验后将 HTML 写到标准输出，失败输出 JSON 诊断且返回非零。使用临时文件避免失败时覆盖原图；仅在退出码为 0 时替换最终视图：
 
 ```bash
-swe-cli system-design render --root /absolute/project --file system-design.yaml > system-design.pending.html && mv system-design.pending.html system-design.html
+reed system-design render --root /absolute/project --file system-design.yaml > system-design.pending.html && mv system-design.pending.html system-design.html
 ```
 
 请求查看图时按下述流程重新生成；显式查看历史产物时，以设计 SHA256 区分它与当前 YAML，不将历史视图称为最新结果。生成视图属于明确写入动作，须纳入任务可写范围；检查命令不写项目。该入口独立于现有 JSON `check` 请求，不修改协议版本 2。
@@ -111,8 +111,8 @@ swe-cli system-design render --root /absolute/project --file system-design.yaml 
 
 当前版本优先使用固定地址 `system-design serve`；DSH 使用架构页签，插件负责启动或复用配套服务，不再另起单文件 `preview`。浏览器访问 `http://127.0.0.1:47831/reed/`。静态 HTML 仍只用于明确要求的离线导出。
 
-1. 从 PATH 定位独立 `swe-cli`，核对 `swe-cli version` 与项目记录的版本，并校验发行摘要。
-2. 明确允许读取的共同工作区。独立浏览器运行 `swe-cli system-design serve --root <工作区绝对路径> --expect-version <固定版本>`。服务只监听回环地址，端口固定；已有服务必须匹配工作区和版本才能复用，不通过换端口掩盖冲突。
+1. 从 PATH 定位独立 `reed`，核对 `reed version` 与项目记录的版本，并校验发行摘要。
+2. 明确允许读取的共同工作区。独立浏览器运行 `reed system-design serve --root <工作区绝对路径> --expect-version <固定版本>`。服务只监听回环地址，端口固定；已有服务必须匹配工作区和版本才能复用，不通过换端口掩盖冲突。
 3. 在项目列表中选择 YAML 所在目录；DSH 把会话目录交给 Go 解析真实路径并校验边界，不自行扩大工作区。多项目共用一个服务。
 4. 页面按下述自动更新规则读取当前 YAML；诊断不是成功架构图。首次打开即无效时修复 YAML 后重新打开。打开请求不等于已显示，依据宿主实际结果报告。
 5. 独立服务用 Ctrl-C 停止。插件只关闭自己启动的服务，复用的独立服务由其使用者管理；插件退出会使其服务上的浏览器暂时断开，新服务启动后已有有效页面继续重试。
@@ -125,7 +125,7 @@ swe-cli system-design render --root /absolute/project --file system-design.yaml 
 
 1. 确定 YAML：优先采用用户指定或当前会话唯一目标，否则使用 `system-design list --root` 发现。多份且无法确定才询问；查看全部时分别启动，不使用不存在的 `preview --all`。没有设计或仅层设计无法完整校验时报告诊断，不补造内容。
 2. 固定 CLI：使用 PATH 中独立 CLI 的已解析绝对路径及项目记录版本。`--expect-version` 必须与运行版本完全一致，否则启动失败；CLI 安装包继续执行自身版本摘要校验。开发源码验证可使用明确的本次构建版本，不能声称为已发布包。
-3. 启动：运行 `swe-cli system-design preview --file <YAML绝对路径> --expect-version <固定版本>`。首次启动完整校验 YAML，成功后输出一行 `swe-preview-v1` JSON，包含 `url`、`source`、`generator_version`、`reused` 和 `browser_opened`。服务持续前台运行，无固定到期时间，Ctrl-C 或终止进程时关闭。只监听 `127.0.0.1`，页面路径含随机标识，不能暴露到公网。
+3. 启动：运行 `reed system-design preview --file <YAML绝对路径> --expect-version <固定版本>`。首次启动完整校验 YAML，成功后输出一行 `swe-preview-v1` JSON，包含 `url`、`source`、`generator_version`、`reused` 和 `browser_opened`。服务持续前台运行，无固定到期时间，Ctrl-C 或终止进程时关闭。只监听 `127.0.0.1`，页面路径含随机标识，不能暴露到公网。
 4. 展示与复用：默认打开系统浏览器；宿主内置浏览器使用 `--no-open` 后打开返回 URL。自动打开失败通过 `browser_error` 返回，服务继续运行。启动前先按同一 YAML 真实路径与相同 CLI 二进制摘要查找已有服务；命中时直接返回原 URL 和 `reused: true`，不等待当前 YAML 重新渲染，页面继续按自身快照展示有效结果或过期诊断。未命中才完整校验和渲染。端口冲突尝试其他本机端口，不关闭其他进程。打开排队不等于已显示，按工具结果说明状态；无法打开时提供 URL，不手写 HTML。
 5. 自动更新：页面每秒读取当前 YAML 快照；相同内容、作用域边界和生成器只复用同一渲染结果，并发页面与状态请求按快照合并到一次渲染，只有快照变化后才重新校验、生成摘要并刷新。状态请求最多等待 60 秒，大图渲染期间不会被旧的 5 秒客户端超时误判为连接中断。校验失败、文件删除时用遮罩明确标注原图已过期并展示诊断；连接中断时标注可能过期并重试。修复后自动恢复或更新。直接请求无效页面仍返回诊断和非成功状态，不将旧图当作成功响应；浏览器缓存禁用。多文件作用域不是原子快照，应在静止工作区查看。
 

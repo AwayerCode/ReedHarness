@@ -4,9 +4,9 @@
 
 ## 安装与版本
 
-CLI 独立发行 `swe-cli_<os>_<arch>.tar.gz`，归档包含 `swe-cli/bin/` 与版本摘要清单。校验发行摘要后将二进制目录加入 PATH，通过 `swe-cli version` 确认版本；Windows 使用 `swe-cli.exe`。Skill 是独立纯文本包，不携带二进制，也不绑定其他 Skill 的版本。项目记录所用 CLI 版本与来源；进行中的范围基线继续使用创建它的工具，不通过升级重建基线掩盖改动。
+CLI 独立发行 `reed_<os>_<arch>.tar.gz`，归档包含 `reed/bin/` 与版本摘要清单。校验发行摘要后将二进制目录加入 PATH，通过 `reed version` 确认版本；Windows 使用 `reed.exe`。Skill 是独立纯文本包，不携带二进制，也不绑定其他 Skill 的版本。项目记录所用 CLI 版本与来源；进行中的范围基线继续使用创建它的工具，不通过升级重建基线掩盖改动。
 
-Skill 可用 `reed install --source <Skill包URL> --version tag:<标签> --path skills/<skill-name>` 独立安装。插件管理的资源通过宿主更新，不覆盖宿主管理目录。CLI 缺失或版本不兼容时报告无法检查，按项目约定安装独立 CLI。
+Skill 可从独立的 `<skill-name>.tar.gz` 文本包解压到临时目录，核对内容后将选定的 `skills/<skill-name>/` 放入宿主的 Skill 目录。插件管理的资源通过宿主更新，不覆盖宿主管理目录。`reed skills list` 列出内嵌 Skill，`reed skills read <name> [relative-resource-path]` 读取编译资源，默认读取 `SKILL.md`，不安装或修改文件。CLI 缺失或版本不兼容时报告无法检查，按项目约定安装独立 CLI。
 
 ## 选择检查
 
@@ -28,7 +28,7 @@ YAML 文件统一命名 `system-design.yaml`，每份只负责所在目录；`li
 
 ## 命令入口
 
-以下 `<CLI>` 指 PATH 中独立安装的 `swe-cli`，所有命令显式指定目标根目录，文件一般使用相对项目路径。
+以下 `<CLI>` 指 PATH 中独立安装的 `reed`，所有命令显式指定目标根目录，文件一般使用相对项目路径。
 
 ```bash
 <CLI> version

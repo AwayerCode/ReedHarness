@@ -2,16 +2,16 @@
 
 > 围绕目标持续推进工作的 Harness：Loop 推进目标，Task 明确每次工作，Skill 提供完成能力。
 
-ReedHarness 实现 Harness 的 Business 层。人确定目标、评价依据、授权与预算；`reed` 根据现状形成任务，驱动现成 Agent 在隔离工作区中执行，用程序检查和独立审查验收结果，再用重新采集的效果证据判断目标进展，决定继续、等待、停止或请人决定。
+ReedHarness 实现 Harness 的 Business 层。目标放在 GitHub Project，任务放在 Issue。人确定目标、评价依据、授权与预算；事件或定时触发 Loop，Agent 做规划、执行和效果评价，`reed` 负责调度与约束，按当前状态推进工作。
 
-模型调用与 Agent 循环使用 Codex、Claude Code、pi 等现成 Agent；`reed` 负责状态、授权、预算、隔离与检查等确定性部分。SWE 是首个验证领域，六个 `swe-*` Skill 提供业务建模、系统设计、实现、测试、交付与接入的专业方法。
+模型调用与 Agent 循环使用 Codex、Claude Code、pi 等现成 Agent；`reed` 负责调度、约束、运行记录与检查等确定性部分。SWE 是首个验证领域，六个 `swe-*` Skill 提供业务建模、系统设计、实现、测试、交付与接入的专业方法。
 
 ## 当前状态
 
-设计已按新的 Harness 定义重做，见[系统设计](docs/system-design.md)。目标、任务与 Loop 尚未实现，按 P0、P1 推进。当前可用的是：
+设计已按新的 Harness 定义重做，见[系统设计](docs/system-design.md)。P0 已统一程序入口，GitHub 接入与事件、定时驱动的 Loop 留待 P1。当前可用的是：
 
-- 六个自包含的 SWE Skill，位于 `skills/`。
-- 确定性检查命令：YAML 架构、文档、产物关系、目录结构与改动范围，当前命令名为 `swe-cli`，P0 合并为 `reed`。
+- 六个自包含的 SWE Skill，位于 `skills/`，并编译进 `reed`；通过 `reed skills list/read` 读取。
+- 确定性检查命令：YAML 架构、文档、产物关系、目录结构与改动范围，统一命令名为 `reed`。
 - 插件验证包与本地架构服务，见[分发设计](docs/distribution-design.md)。
 
 已发布的 `v0.3.0` 是旧的平台 Skill 包，不对应本设计。
@@ -48,8 +48,8 @@ modules:
 独立安装 CLI 并加入 PATH 后，在项目根目录执行：
 
 ```bash
-swe-cli system-design validate --file system-design.yaml
-swe-cli system-design check --file system-design.yaml
+reed system-design validate --file system-design.yaml
+reed system-design check --file system-design.yaml
 ```
 
 例如项目的 Go module 为 `example.com/shop`，若支付模块导入 `example.com/shop/src/application/orders`，`check` 会报告未允许的模块依赖及文件、行号，并以退出码 `1` 结束。退出码 `0` 表示本次范围通过，`2` 表示无法检查；结果为 JSON。
@@ -75,15 +75,15 @@ swe-cli system-design check --file system-design.yaml
 在本仓库根目录执行，构建六平台 CLI 和独立 Skill 文本包，并选择本机 CLI：
 
 ```bash
-apps/swe-cli/scripts/build-package.sh
-reed_package="$PWD/apps/swe-cli/dist/swe-cli_$(go env GOOS)_$(go env GOARCH).tar.gz"
+apps/reed/scripts/build-release.sh
+reed_package="$PWD/apps/reed/dist/reed_$(go env GOOS)_$(go env GOARCH).tar.gz"
 reed_tools="$(mktemp -d)"
 tar -xzf "$reed_package" -C "$reed_tools"
-export PATH="$reed_tools/swe-cli/bin:$PATH"
-swe-cli version
+export PATH="$reed_tools/reed/bin:$PATH"
+reed version
 reed_demo="$(mktemp -d)"
 mkdir -p "$reed_demo/.agents"
-tar -xzf apps/swe-cli/dist/swe-implementation.tar.gz -C "$reed_demo/.agents"
+tar -xzf apps/reed/dist/swe-implementation.tar.gz -C "$reed_demo/.agents"
 cd "$reed_demo"
 ```
 

@@ -5,12 +5,12 @@
 读取项目指引、已有设计、构建配置、代码与测试，识别应用、语言、模块根和依赖关系。使用 PATH 中独立安装的 CLI 发现正式设计；`<项目根目录>` 是发现及批量检查的共同根，`<YAML路径>` 相对该根或为绝对路径：
 
 ```bash
-swe-cli version
-swe-cli system-design list --root <项目根目录>
-swe-cli system-design validate --root <项目根目录> --file <YAML路径>
-swe-cli system-design check --root <项目根目录> --file <YAML路径>
-swe-cli system-design validate --root <项目根目录> --all
-swe-cli system-design check --root <项目根目录> --all
+reed version
+reed system-design list --root <项目根目录>
+reed system-design validate --root <项目根目录> --file <YAML路径>
+reed system-design check --root <项目根目录> --file <YAML路径>
+reed system-design validate --root <项目根目录> --all
+reed system-design check --root <项目根目录> --all
 ```
 
 `list` 不解析或校验内容，作用域存在不等于有效设计；无设计时据实记录。显式入口解析到真实目录，不通过符号链接制造第二个作用域。发现规则、父子隔离与输出见本地 [YAML 规范](system-design/guide.md)和 [CLI 约定](cli.md)。

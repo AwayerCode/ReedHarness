@@ -12,14 +12,22 @@ import vm from "node:vm";
 test("packaged service, DSH proxy, reload and disposal", async () => {
   const platform = `${process.platform === "win32" ? "windows" : process.platform}_${process.arch === "x64" ? "amd64" : process.arch}`;
   const version = process.env.REED_TEST_VERSION || "0.1.0";
-  const bundle = resolve(`apps/swe-cli/dist/plugins/${version}/${platform}`);
+  const bundle = resolve(`apps/reed/dist/plugins/${version}/${platform}`);
   const root = await mkdtemp(join(tmpdir(), "reed-plugin-test-"));
   let service;
   let proxy;
   try {
-    await cp("apps/swe-cli/internal/systemdesign/testdata/project", join(root, "first"), { recursive: true });
-    await cp("apps/swe-cli/internal/systemdesign/testdata/project", join(root, "second"), { recursive: true });
-    service = spawn(join(bundle, "tools/swe-cli/bin", process.platform === "win32" ? "swe-cli.exe" : "swe-cli"), ["system-design", "serve", "--root", root, "--expect-version", version]);
+    await cp("apps/reed/internal/systemdesign/testdata/project", join(root, "first"), { recursive: true });
+    await cp("apps/reed/internal/systemdesign/testdata/project", join(root, "second"), { recursive: true });
+    const executable = join(bundle, "tools/reed/bin", process.platform === "win32" ? "reed.exe" : "reed");
+    const compiled = JSON.parse(execFileSync(executable, ["skills", "list"], { cwd: root, encoding: "utf8" }));
+    assert.equal(compiled.version, version);
+    assert.deepEqual(compiled.skills, (await readdir(join(bundle, "skills"))).sort());
+    for (const name of compiled.skills) {
+      const text = execFileSync(executable, ["skills", "read", name, "references/cli.md"], { cwd: root, encoding: "utf8" });
+      assert.equal(text, await readFile(join(bundle, "skills", name, "references/cli.md"), "utf8"));
+    }
+    service = spawn(join(bundle, "tools/reed/bin", process.platform === "win32" ? "reed.exe" : "reed"), ["system-design", "serve", "--root", root, "--expect-version", version]);
     await new Promise((done, reject) => {
       const timer = setTimeout(() => reject(new Error("startup timeout")), 10000);
       service.once("error", error => { clearTimeout(timer); reject(error); });
@@ -44,14 +52,14 @@ test("packaged service, DSH proxy, reload and disposal", async () => {
     for (const name of bundled) {
       assert.equal(skills.get(name).resourceBase.path, join(bundle, "skills", name));
       assert.equal(skills.get(name).path, join(bundle, "skills", name, "SKILL.md"));
-      assert.ok(skills.get(name).content.includes(join(bundle, "tools/swe-cli/bin")));
+      assert.ok(skills.get(name).content.includes(join(bundle, "tools/reed/bin")));
     }
     for (const host of ["codex", "claude"]) {
       const manifest = JSON.parse(await readFile(join(bundle, `.${host}-plugin/plugin.json`), "utf8"));
       assert.equal(manifest.skills, "./skills/");
       for (const name of bundled) {
         const entry = await readFile(join(bundle, manifest.skills, name, "SKILL.md"), "utf8");
-        assert.match(entry, /\.\.\/\.\.\/tools\/swe-cli\/bin/);
+        assert.match(entry, /\.\.\/\.\.\/tools\/reed\/bin/);
       }
     }
     proxy = createServer((request, response) => {
@@ -144,7 +152,7 @@ test("npm platform install binds independent CLI runtime and rejects tampering",
   const arch = process.arch === "x64" ? "amd64" : process.arch;
   const name = `dsh-reed-${os}-${arch}`;
   const version = process.env.REED_TEST_VERSION || "0.1.0";
-  const packages = resolve(`apps/swe-cli/dist/plugins/${version}`);
+  const packages = resolve(`apps/reed/dist/plugins/${version}`);
   const temporary = await mkdtemp(join(tmpdir(), "reed-install-test-"));
   try {
     await cp(join(packages, "dsh-reed"), temporary, { recursive: true });
@@ -156,8 +164,8 @@ test("npm platform install binds independent CLI runtime and rejects tampering",
     manifest.version = "99.0.0"; // Plugin/Skill versions do not bind the CLI version.
     await writeFile(join(temporary, "package.json"), JSON.stringify(manifest));
     execFileSync(process.execPath, [join(temporary, "install.mjs")]);
-    const binary = os === "windows" ? "swe-cli.exe" : "swe-cli";
-    assert.deepEqual(await readFile(join(temporary, "tools/swe-cli/bin", binary)), await readFile(join(packages, name, binary)));
+    const binary = os === "windows" ? "reed.exe" : "reed";
+    assert.deepEqual(await readFile(join(temporary, "tools/reed/bin", binary)), await readFile(join(packages, name, binary)));
     await writeFile(join(temporary, "node_modules", name, binary), "tampered");
     assert.throws(() => execFileSync(process.execPath, [join(temporary, "install.mjs")], { stdio: "pipe" }), /checksum mismatch/);
   } finally { await rm(temporary, { recursive: true, force: true }); }
@@ -175,7 +183,7 @@ async function waitFor(check) {
 test("plugin starts its service and releases the port for an upgraded plugin", async () => {
   const platform = `${process.platform === "win32" ? "windows" : process.platform}_${process.arch === "x64" ? "amd64" : process.arch}`;
   const version = process.env.REED_TEST_VERSION || "0.1.0";
-  const bundle = resolve(`apps/swe-cli/dist/plugins/${version}/${platform}`);
+  const bundle = resolve(`apps/reed/dist/plugins/${version}/${platform}`);
   const temporary = await mkdtemp(join(tmpdir(), "reed-upgrade-test-"));
   const workspace = join(temporary, "workspace");
   const upgraded = join(temporary, "upgraded");
@@ -187,15 +195,15 @@ test("plugin starts its service and releases the port for an upgraded plugin", a
     catch (error) { return error.cause?.code === "ECONNREFUSED"; }
   };
   try {
-    await cp("apps/swe-cli/internal/systemdesign/testdata/project", workspace, { recursive: true });
+    await cp("apps/reed/internal/systemdesign/testdata/project", workspace, { recursive: true });
     await cp(bundle, upgraded, { recursive: true });
     const nextVersion = version + "-upgrade-test";
-    const executable = process.platform === "win32" ? "swe-cli.exe" : "swe-cli";
-    execFileSync("go", ["build", "-ldflags", `-X github.com/AwayerCode/ReedHarness/apps/swe-cli/internal/app.Version=${nextVersion}`, "-o", join(upgraded, "tools/swe-cli/bin", executable), "."], { cwd: resolve("apps/swe-cli") });
-    const runtime = JSON.parse(await readFile(join(upgraded, "tools/swe-cli/runtime.json"), "utf8"));
+    const executable = process.platform === "win32" ? "reed.exe" : "reed";
+    execFileSync("go", ["build", "-ldflags", `-X github.com/AwayerCode/ReedHarness/apps/reed/internal/app.Version=${nextVersion}`, "-o", join(upgraded, "tools/reed/bin", executable), "."], { cwd: resolve("apps/reed") });
+    const runtime = JSON.parse(await readFile(join(upgraded, "tools/reed/runtime.json"), "utf8"));
     runtime.version = nextVersion;
-    runtime.assets[platform.replace("_", "/")].sha256 = createHash("sha256").update(await readFile(join(upgraded, "tools/swe-cli/bin", executable))).digest("hex");
-    await writeFile(join(upgraded, "tools/swe-cli/runtime.json"), JSON.stringify(runtime));
+    runtime.assets[platform.replace("_", "/")].sha256 = createHash("sha256").update(await readFile(join(upgraded, "tools/reed/bin", executable))).digest("hex");
+    await writeFile(join(upgraded, "tools/reed/runtime.json"), JSON.stringify(runtime));
     const mount = async directory => {
       const { apply } = await import(pathToFileURL(join(directory, "lib/index.js")));
       apply({ effect(callback) { dispose = callback(); }, skills: { register() { return () => {}; } }, webServer: {
@@ -228,11 +236,11 @@ test("plugin starts its service and releases the port for an upgraded plugin", a
 
 test("rebuilding a version removes stale files from packages and archives", async () => {
   const version = process.env.REED_TEST_VERSION || "0.1.0";
-  const root = resolve(`apps/swe-cli/dist/plugins/${version}`);
+  const root = resolve(`apps/reed/dist/plugins/${version}`);
   const stale = ["darwin_arm64/skills/swe-testing/removed.md", "dsh-reed/skills/swe-testing/removed.md", "dsh-reed-darwin-arm64/removed.txt"];
   for (const file of stale) await writeFile(join(root, file), "removed source");
   execFileSync(process.execPath, ["plugins/package.mjs", version]);
   for (const file of stale) await assert.rejects(access(join(root, file)), { code: "ENOENT" });
-  const files = execFileSync("tar", ["-tzf", "apps/swe-cli/dist/reed-plugin_darwin_arm64.tar.gz"], { encoding: "utf8" });
+  const files = execFileSync("tar", ["-tzf", "apps/reed/dist/reed-plugin_darwin_arm64.tar.gz"], { encoding: "utf8" });
   assert.doesNotMatch(files, /removed\.md/);
 });

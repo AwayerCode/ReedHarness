@@ -1,6 +1,6 @@
 # ReedHarness 协作约定
 
-本仓是 ReedHarness 的完整源码位置。ReedHarness 实现 Harness 的 Business 层：Loop 推进目标，Task 明确每次工作，Skill 提供完成能力，设计以 [系统设计](docs/system-design.md) 为权威依据。`docs/` 保存设计与参考，根目录 `README.md` 保存项目介绍与快速开始，`CONTRIBUTING.md` 保存 Skill 维护与构建发布规则，`skills/` 保存领域 Skill，`apps/` 保存 Go 程序。设计正在从旧方案迁移：`apps/swe-cli/` 的检查命令将在 P0 并入 `apps/reed/`，旧的 Skill 安装器随之删除。测试与构建在本地执行，二进制手动发布到 GitHub Releases。
+本仓是 ReedHarness 的完整源码位置。ReedHarness 实现 Harness 的 Business 层：Loop 推进目标，Task 明确每次工作，Skill 提供完成能力，设计以 [系统设计](docs/system-design.md) 为权威依据。`docs/` 保存设计与参考，根目录 `README.md` 保存项目介绍与快速开始，`CONTRIBUTING.md` 保存 Skill 维护与构建发布规则，`skills/` 保存领域 Skill，`apps/` 保存 Go 程序。`apps/reed/` 是唯一 Go 应用，内嵌 Skill 并提供检查与架构服务；事件与定时调度按 P1 建设，旧 Skill 安装器已删除。测试与构建在本地执行，二进制手动发布到 GitHub Releases。
 
 ## Skill 入口
 
@@ -34,26 +34,21 @@ find apps/reed -name '*.go' -type f -print0 | xargs -0 gofmt -l
 (cd apps/reed && go test -race ./...)
 (cd apps/reed && go vet ./...)
 apps/reed/scripts/build-release.sh
-find apps/swe-cli -name '*.go' -type f -print0 | xargs -0 gofmt -l
-(cd apps/swe-cli && go test -race ./...)
-(cd apps/swe-cli && go vet ./...)
-apps/swe-cli/scripts/build-package.sh
 ```
 
-`gofmt -l` 应无输出。构建产物位于 `apps/reed/dist/` 和 `apps/swe-cli/dist/`，不提交。发行目录含 reed、六平台独立 `swe-cli_<os>_<arch>.tar.gz`、独立纯文本 `<skill-name>.tar.gz` 和摘要；Skill 不带二进制。交叉编译不代替 Windows 实际运行验证；在 Windows 上分别进入 `apps/reed` 和 `apps/swe-cli` 执行 `go test -race ./...` 和 `go vet ./...`。
+`gofmt -l` 应无输出。构建产物位于 `apps/reed/dist/`，不提交。发行目录含六平台独立 `reed_<os>_<arch>.tar.gz`、独立纯文本 `<skill-name>.tar.gz` 和摘要；Skill 不带二进制。交叉编译不代替 Windows 实际运行验证；在 Windows 上进入 `apps/reed` 执行 `go test -race ./...` 和 `go vet ./...`。
 
-修改 Skill 时，按涉及范围运行：
+修改 Skill 后先重新生成内嵌资源，再按涉及范围运行：
 
 ```bash
-(cd apps/swe-cli && go test ./internal/checks ./internal/app ./internal/workspace)
+(cd apps/reed && go generate ./...)
+(cd apps/reed && go test ./internal/skills ./internal/checks ./internal/app ./internal/workspace)
 ```
 
 修改安装或构建脚本时运行：
 
 ```bash
-sh -n install.sh
-bash -n apps/reed/scripts/build-release.sh
-bash -n apps/swe-cli/scripts/build-package.sh
+bash -n apps/reed/scripts/build-release.sh plugins/build.sh scripts/verify.sh
 ```
 
 修改文档后运行：

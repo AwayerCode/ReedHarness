@@ -6,19 +6,19 @@
 
 `skills/` 下的六个目录就是唯一事实来源，仓库不维护登记表：构建、插件打包和安装都直接读取目录与 `SKILL.md`，无需同步第二份名称或简介清单。新增 Skill 只需创建 `skills/<name>/SKILL.md`，名称与目录一致，小写字母、数字和单连字符，最长 64 字符。
 
-Skill 的版本由发行标签或 commit 标识，不单独维护语义版本号。修改内容时同步该 Skill 的 `SKILL.md` frontmatter 简介；历史由 Git 保存。`reed install --path skills/swe-xxx` 只安装选定目录，不展开其他入口，`--version` 选择仓库标签或 commit。
+Skill 的版本由发行标签或 commit 标识，不单独维护语义版本号。修改内容时同步该 Skill 的 `SKILL.md` frontmatter 简介；历史由 Git 保存。独立文本包只包含选定 Skill；解压校验后放入宿主 Skill 目录，插件资源通过宿主管理。修改后运行 `(cd apps/reed && go generate ./...)`，提交生成的 `internal/skills/resources_gen.go`；它是编译产物，不是第二份可编辑来源。
 
-每个 Skill 自带必要方法、模板、专业规范和参考 Schema，不链接或感知其他 Skill，不组织跨 Skill 交接。宿主已有的通用行为规范不整套复制。CLI 固有 Schema 位于 `apps/swe-cli/resources/`，由 CLI 生成内嵌资源；Skill 中的参考副本用于理解自身输入输出，不是 CLI 运行时依赖，`(cd apps/swe-cli && go test ./internal/checks)` 会拒绝两者漂移。
+每个 Skill 自带必要方法、模板、专业规范和参考 Schema，不链接或感知其他 Skill，不组织跨 Skill 交接。宿主已有的通用行为规范不整套复制。CLI 固有 Schema 位于 `apps/reed/resources/`，由 CLI 生成内嵌资源；Skill 中的参考副本用于理解自身输入输出，不是 CLI 运行时依赖，`(cd apps/reed && go test ./internal/checks)` 会拒绝两者漂移。
 
 只有产出机器可校验产物的 Skill 才带 `contract.json`，用来声明适用产物类型和包内参考 Schema 位置；`swe-adoption` 不产出这类产物，因此没有该文件。
 
 ## 独立构建与发行
 
-`apps/swe-cli/scripts/build-package.sh <版本>` 构建六平台独立 `swe-cli_<os>_<arch>.tar.gz`，内含 `swe-cli/bin/` 与版本摘要清单；同时为 `skills/` 下每个 Skill 生成独立的 `<skill-name>.tar.gz` 文本包，归档保存 `skills/<skill-name>/`。Skill 包只接受 UTF-8 文本：含 NUL 或其他二进制内容的文件使构建失败，归档统一以 `0644` 保存。Skill 包不带二进制或运行时绑定清单，与操作系统无关。CLI 使用独立 PATH，不依赖 Skill 安装路径。
+`apps/reed/scripts/build-release.sh <版本>` 构建六平台独立 `reed_<os>_<arch>.tar.gz`，内含 `reed/bin/` 与版本摘要清单；同时为 `skills/` 下每个 Skill 生成独立的 `<skill-name>.tar.gz` 文本包，归档保存 `skills/<skill-name>/`。Skill 包只接受 UTF-8 文本：含 NUL 或其他二进制内容的文件使构建失败，归档统一以 `0644` 保存。Skill 包不带二进制或运行时绑定清单，与操作系统无关。CLI 使用独立 PATH，不依赖 Skill 安装路径。
 
-`apps/reed/scripts/build-release.sh <版本>` 构建 reed 发行物并汇集独立 CLI、Skill 包与摘要；即使同次上传到 ReedHarness Release，仍是分别选择、安装和更新的资源。可通过 `CLI_VERSION` 环境变量独立指定 CLI 版本；默认沿用发行版本。构建不修改 Skill 源码，未上传的产物不能声称远端可安装。
+同次发行的二进制、Skill 包、插件使用同一版本。构建先从 `skills/` 重新生成内嵌资源，二进制通过 `reed skills list/read` 提供只读访问。构建不修改 Skill 源码，未上传的产物不能声称远端可安装。
 
-跨平台构建不替代实机验收。完整开发验证见[本地验证](AGENTS.md#本地验证)，CLI 开发说明见 [SWE CLI](apps/swe-cli/README.md)。
+跨平台构建不替代实机验收。完整开发验证见[本地验证](AGENTS.md#本地验证)，CLI 开发说明见 [reed 应用](apps/reed/README.md)。
 
 ## 方法与规则维护
 

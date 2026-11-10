@@ -9,7 +9,7 @@ for executable in go git "$node_binary" "$python_binary"; do
   command -v "$executable" >/dev/null || { echo "Missing verification dependency: $executable" >&2; exit 1; }
 done
 
-for module in apps/reed apps/swe-cli; do
+for module in apps/reed; do
   unformatted="$(find "$module" -name '*.go' -type f -print0 | xargs -0 gofmt -l)"
   if [[ -n "$unformatted" ]]; then
     echo "Go formatting required:" >&2
@@ -18,19 +18,17 @@ for module in apps/reed apps/swe-cli; do
   fi
   (cd "$module" && go test -race ./... && go vet ./...)
 done
-"$node_binary" --test apps/swe-cli/internal/systemdesign/*_test.cjs
-sh -n install.sh
-bash -n scripts/verify.sh apps/reed/scripts/build-release.sh apps/swe-cli/scripts/build-package.sh
+"$node_binary" --test apps/reed/internal/systemdesign/*_test.cjs
+bash -n scripts/verify.sh apps/reed/scripts/build-release.sh
 "$python_binary" -B scripts/knowledge_lint.py --changed
 git diff --check
 
-# One version drives the installer, the CLI runtime and the plugin bundle, because
+# One version drives reed and the plugin bundle, because
 # the plugin starts its bundled CLI with --expect-version.
 version="$(git describe --tags --match 'v[0-9]*' --always --dirty 2>/dev/null)"
 version="${version#v}"
 [[ -n "$version" ]] || version=0.0.0-dev
 # The plugin bundle and its CLI must report one version, so strip the tag prefix.
 apps/reed/scripts/build-release.sh "$version"
-apps/swe-cli/scripts/build-package.sh "$version"
 "$node_binary" plugins/package.mjs "$version"
 REED_TEST_VERSION="$version" "$node_binary" --test plugins/integration.test.mjs
