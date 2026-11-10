@@ -38,16 +38,7 @@ SWE 使用包含 CLI 的平台 Skill 包。以下示例的 `vX.Y.Z` 需替换为
 /tmp/reed install --source https://github.com/AwayerCode/ReedHarness/releases/download/vX.Y.Z/swe_darwin_arm64.tar.gz --version tag:vX.Y.Z --path skills/swe
 ```
 
-无需 CLI 的 Skill 仍可从仓库标签或 commit 安装。SWE 源码目录不包含构建产物，直接安装源码归档不会自动获得 CLI；应选择完整平台包。
-安装接受自有路径 `skills/<名称>` 和第三方路径 `skills/3rdparty/<名称>`，两者都映射到 `.agents/skills/<名称>/`。新版 ReedHarness 也会按统一索引将旧的 `skills/<第三方名称>` 解析到新目录，原有安装命令无需更改；没有索引的历史归档仍按原路径安装。`Skills/<名称>` 保留历史直接路径支持，不能直接安装分组目录 `skills/3rdparty`。入口必须是具有名称与简介的 `SKILL.md`，名称须与目录一致；不再分发普通文件或整个仓库。可重复 `--path` 选择多个 Skill。
-
-例如安装第三方 Skill（`<固定SHA>` 替换为包含新目录的仓库提交）：
-
-```bash
-/tmp/reed install --source https://github.com/AwayerCode/ReedHarness --version commit:<固定SHA> --path skills/3rdparty/diagram-design
-```
-
-旧参数 `--path skills/diagram-design` 在新版 ReedHarness 中得到相同安装结果。新旧别名不能在同一命令重复选择，避免同名目标冲突。第三方来源与本仓路径由统一的 `skills/index.json` 登记；安装仍以明确的仓库标签或 commit 为准。迁移后的仓库需使用新版 ReedHarness，不能保证旧二进制理解新目录。
+本仓只分发 SWE。源码目录不包含构建产物，直接安装源码归档不会自动获得 CLI，应选择完整平台包。`--path skills/swe` 安装到 `.agents/skills/swe/`；入口必须是具有名称与简介的 `SKILL.md`，名称须与目录一致，不分发普通文件或整个仓库。历史归档的路径兼容逻辑继续保留，当前登记表不再列出其他 Skill。
 
 reed 只下载所选 Skill 归档，将包内文件原样安装，不解释 `runtime.json` 或额外下载 CLI。SWE 包已经包含本平台 `bin/swe-cli` 和打包生成的本地摘要清单；CLI 启动时核对自身版本和摘要。安装前可用发行页 `SHA256SUMS` 验证整个包，选择正确平台。版本支持 `tag:<标签>`、`commit:<SHA>` 和 `branch:<分支>`；需要可复现安装时使用固定标签或 commit。
 

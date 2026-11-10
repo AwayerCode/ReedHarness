@@ -147,7 +147,7 @@ Skill 保存共同方法及项目适配指引；项目约定、契约和声明�
 
 Skill 是唯一项目交付单元，方法与配套 CLI 位于 `.agents/skills/<名称>/`，例如 `.agents/skills/swe/bin/swe-cli`。reed 是临时分发工具，不在项目中安装自身，也不维护下载记录、项目锁或安装数据库。平台二进制与生成的 `runtime.json` 一起加入项目忽略规则，Skill 文本可随 Git 保存。
 
-仓库用 `skills/<名称>/` 保存自有 Skill、`skills/3rdparty/<名称>/` 保存第三方 Skill，统一索引的 `path` 指向本仓位置，`source.path` 保留上游位置。安装旧的扁平路径时按同份归档内的索引解析，新目录层级不进入项目安装路径；无索引的历史包保持直接路径安装。第三方许可证和资源原样保留。
+仓库只保存 `skills/swe/`，由 `skills/index.json` 登记；文档检查工具独立位于 `scripts/knowledge_lint.py`，不属于产品 Skill。安装器对历史归档仍使用同份归档内的索引解析路径，无索引的历史包保持直接路径安装。
 
 仅创建 ReedHarness Release，完整平台 Skill 包作为其资源；打包生成的本地清单固定包内 CLI 版本与摘要，无下载地址。项目中的文件和 Git 历史提供实际内容与变更依据。reed 的 list 扫描本地 Skill，不推断安装来源、版本或完整性。移除依赖持久记录的 update、status、remove；换版先安装到临时项目并对比，替换与移除由维护者显式操作。
 

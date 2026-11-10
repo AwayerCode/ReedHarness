@@ -21,7 +21,7 @@ done
 "$node_binary" --test apps/swe-cli/internal/systemdesign/*_test.cjs
 sh -n install.sh
 bash -n scripts/verify.sh apps/reed/scripts/build-release.sh apps/swe-cli/scripts/build-package.sh
-"$python_binary" -B skills/knowledge-doc-guard/scripts/knowledge_lint.py --changed
+"$python_binary" -B scripts/knowledge_lint.py --changed
 git diff --check
 apps/reed/scripts/build-release.sh
 apps/swe-cli/scripts/build-package.sh

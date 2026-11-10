@@ -8,7 +8,7 @@ ReedHarness 通过 SWE Skill 指导 Agent 完成业务建模、系统设计、�
 
 插件市场分发与固定地址架构服务正在接入：支持静态 HTML 导出、Go 本地实时服务和 DSH 固定路径代理。构建、运行及待完成的市场验收见[插件分发与架构服务](docs/plugin-distribution.md)。市场安装链路验收前保留现有安装方式。
 
-自有 Skill 保存在 `skills/<名称>/`，第三方 Skill 集中在 `skills/3rdparty/<名称>/`，统一由 `skills/index.json` 登记。两者均安装到 `.agents/skills/<名称>/`；兼容路径与使用方式见[安装指南](docs/usage.md#安装-skill)。
+本仓只维护 `skills/swe/`，由 `skills/index.json` 登记独立版本；现有项目安装路径为 `.agents/skills/swe/`，使用方式见[安装指南](docs/usage.md#安装-skill)。文档检查工具独立保存在 `scripts/`，不作为 Skill 分发。
 
 ## 为什么需要 ReedHarness
 

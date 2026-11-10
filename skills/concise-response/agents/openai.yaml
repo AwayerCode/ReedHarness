@@ -1,4 +1,0 @@
-interface:
-  display_name: "立场化简洁回复"
-  short_description: "站在用户立场思考；回复简洁，完整知识不压缩。"
-  default_prompt: "使用 $concise-response 站在我的认知立场内部思考；对话保持简洁，但完整保留知识成品的框架、推导与细节。"

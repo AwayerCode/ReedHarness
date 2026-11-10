@@ -1,4 +1,0 @@
-interface:
-  display_name: "Knowledge 文档守护"
-  short_description: "规范 Knowledge 文档的新增、修改、删除、查找与 Markdown 格式。"
-  default_prompt: "使用 $knowledge-doc-guard 按对应规则查找、新增、修改或删除 Knowledge 文档，并严格遵守 Markdown 格式。"

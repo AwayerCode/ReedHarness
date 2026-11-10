@@ -4,8 +4,6 @@ set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 version="${1:-$(git -C "$root" describe --tags --match 'v[0-9]*' --always --dirty 2>/dev/null || printf 'dev')}"
 dist="${DIST_DIR:-$root/dist}"
-# Validate both first-party and third-party catalog paths before producing packages.
-# SWE remains the only platform package; external Skills ship via source archives.
 (cd "$root/../reed" && go test ./internal/installer -run Catalog)
 mkdir -p "$dist"
 dist="$(cd "$dist" && pwd)"

@@ -9,7 +9,7 @@ import (
 func TestSearchFiltersCatalog(t *testing.T) {
 	t.Parallel()
 	archive := newArchiveServer(t, archiveFiles{
-		"skills/index.json":   {body: `{"schema_version":1,"skills":[{"name":"swe","description":"engineering design review"},{"name":"concise-response","description":"writing style"}]}`, mode: 0o644},
+		"skills/index.json":   {body: `{"schema_version":1,"skills":[{"name":"swe","description":"engineering design review"},{"name":"example","description":"writing style"}]}`, mode: 0o644},
 		"skills/swe/SKILL.md": {body: "invalid: search must not parse this", mode: 0o644},
 	})
 	manager := Manager{Client: archive.Client()}
@@ -18,7 +18,7 @@ func TestSearchFiltersCatalog(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(skills) != 2 || skills[0].Name != "concise-response" {
+	if len(skills) != 2 || skills[0].Name != "example" {
 		t.Fatalf("unexpected catalog: %#v", skills)
 	}
 
