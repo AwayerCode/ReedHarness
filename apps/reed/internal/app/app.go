@@ -67,8 +67,6 @@ func (r *Runner) Run(ctx context.Context, args []string) int {
 		return r.install(ctx, args[1:])
 	case "list":
 		return r.list(args[1:])
-	case "search":
-		return r.search(ctx, args[1:])
 	case "version":
 		if len(args) != 1 {
 			fmt.Fprintln(r.stderr, "reed: version does not accept arguments")
@@ -173,45 +171,6 @@ func (r *Runner) list(args []string) int {
 	return 0
 }
 
-func (r *Runner) search(ctx context.Context, args []string) int {
-	flags := flag.NewFlagSet("search", flag.ContinueOnError)
-	flags.SetOutput(r.stderr)
-	var rawSource string
-	var version string
-	flags.StringVar(&rawSource, "source", "https://github.com/AwayerCode/ReedHarness", "ReedHarness repository URL")
-	flags.StringVar(&version, "version", "", "branch:<name>, tag:<name>, or commit:<sha> (default: branch:main)")
-	flags.Usage = func() { r.printSearchUsage(flags.Output()) }
-	if err := flags.Parse(floatFlagsFirst(args)); err != nil {
-		if errors.Is(err, flag.ErrHelp) {
-			return 0
-		}
-		return 2
-	}
-	if flags.NArg() > 1 {
-		fmt.Fprintf(r.stderr, "reed: unexpected argument %q\n", flags.Arg(1))
-		return 2
-	}
-	query := ""
-	if flags.NArg() == 1 {
-		query = flags.Arg(0)
-	}
-	manager := installer.Manager{Client: r.client}
-	skills, err := manager.Search(ctx, rawSource, version, query)
-	if err != nil {
-		r.printError(err)
-		return 1
-	}
-	if len(skills) == 0 {
-		fmt.Fprintln(r.stdout, "no matching skills")
-		return 0
-	}
-	fmt.Fprintf(r.stdout, "%-28s %-30s %s\n", "NAME", "PATH", "SUMMARY")
-	for _, skill := range skills {
-		fmt.Fprintf(r.stdout, "%-28s %-30s %s\n", skill.Name, skill.Path, skill.Summary)
-	}
-	return 0
-}
-
 func (r *Runner) printError(err error) {
 	fmt.Fprintf(r.stderr, "reed: %v\n", err)
 }
@@ -220,11 +179,10 @@ func (r *Runner) printUsage(writer io.Writer) {
 	fmt.Fprintln(writer, "Usage: reed <command> [options]")
 	fmt.Fprintln(writer)
 	fmt.Fprintln(writer, "Commands:")
-	fmt.Fprintln(writer, "  install   Install selected Skills and their companion CLI")
+	fmt.Fprintln(writer, "  install   Install selected Skills")
 	fmt.Fprintln(writer, "  list      List Skills found in .agents/skills/")
-	fmt.Fprintln(writer, "  search    Search available skills from index.json")
 	fmt.Fprintln(writer, "  version   Print the ReedHarness version")
-	fmt.Fprintln(writer, "\nSkills and companion CLIs install to .agents/skills/. No project records or locks.")
+	fmt.Fprintln(writer, "\nSkills install to .agents/skills/. No registry, project records or locks.")
 }
 
 func (r *Runner) printInstallUsage(writer io.Writer) {
@@ -233,34 +191,6 @@ func (r *Runner) printInstallUsage(writer io.Writer) {
 
 func (r *Runner) printListUsage(writer io.Writer) {
 	fmt.Fprintln(writer, "Usage: reed list [--root <dir>]")
-}
-
-func (r *Runner) printSearchUsage(writer io.Writer) {
-	fmt.Fprintln(writer, "Usage: reed search [--source <url>] [--version <ref>] [query]")
-}
-
-// flag.Parse stops at the first positional argument, so move a leading query
-// after the flags to accept both "search review --source x" and the reverse.
-func floatFlagsFirst(args []string) []string {
-	flags := make([]string, 0, len(args))
-	positionals := make([]string, 0, len(args))
-	for index := 0; index < len(args); index++ {
-		arg := args[index]
-		switch {
-		case arg == "--source" || arg == "--version" || arg == "-source" || arg == "-version":
-			flags = append(flags, arg)
-			if index+1 < len(args) {
-				index++
-				flags = append(flags, args[index])
-			}
-		case strings.HasPrefix(arg, "--source=") || strings.HasPrefix(arg, "--version=") ||
-			strings.HasPrefix(arg, "-source=") || strings.HasPrefix(arg, "-version="):
-			flags = append(flags, arg)
-		default:
-			positionals = append(positionals, arg)
-		}
-	}
-	return append(flags, positionals...)
 }
 
 func resolveRoot(root string) (string, error) {

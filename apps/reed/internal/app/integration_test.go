@@ -62,23 +62,15 @@ func run(t *testing.T, runner *Runner, args ...string) (int, string, string) {
 	return code, stdout.String(), stderr.String()
 }
 
-func TestSearchInstallListFlow(t *testing.T) {
+func TestInstallListFlow(t *testing.T) {
 	t.Parallel()
 	server := newArchiveServer(t, map[string]archiveEntry{
-		"skills/index.json":   {body: `{"schema_version":1,"skills":[{"name":"swe","description":"engineering review"}]}`, mode: 0o644},
 		"skills/swe/SKILL.md": {body: "---\nname: swe\ndescription: engineering review\n---\n", mode: 0o644},
 	})
 	project := t.TempDir()
 	runner := New(Options{Version: "v0.2.0", Client: server.Client()})
 
-	code, stdout, stderr := run(t, runner, "search",
-		"--source", server.URL+"/archive.tar.gz",
-		"--version", "tag:v0.2.0", "review")
-	if code != 0 || !strings.Contains(stdout, "swe") {
-		t.Fatalf("search failed: %d %q %q", code, stdout, stderr)
-	}
-
-	code, stdout, stderr = run(t, runner, "install",
+	code, stdout, stderr := run(t, runner, "install",
 		"--source", server.URL+"/archive.tar.gz",
 		"--version", "tag:v0.2.0",
 		"--path", "skills/swe",

@@ -23,5 +23,14 @@ sh -n install.sh
 bash -n scripts/verify.sh apps/reed/scripts/build-release.sh apps/swe-cli/scripts/build-package.sh
 "$python_binary" -B scripts/knowledge_lint.py --changed
 git diff --check
-apps/reed/scripts/build-release.sh
-apps/swe-cli/scripts/build-package.sh
+
+# One version drives the installer, the CLI runtime and the plugin bundle, because
+# the plugin starts its bundled CLI with --expect-version.
+version="$(git describe --tags --match 'v[0-9]*' --always --dirty 2>/dev/null)"
+version="${version#v}"
+[[ -n "$version" ]] || version=0.0.0-dev
+# The plugin bundle and its CLI must report one version, so strip the tag prefix.
+apps/reed/scripts/build-release.sh "$version"
+apps/swe-cli/scripts/build-package.sh "$version"
+"$node_binary" plugins/package.mjs "$version"
+REED_TEST_VERSION="$version" "$node_binary" --test plugins/integration.test.mjs

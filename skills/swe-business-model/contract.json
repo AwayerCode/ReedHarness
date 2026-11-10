@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "inputs": [
+    "business-model"
+  ],
+  "outputs": [
+    "business-model"
+  ],
+  "schemas": {
+    "business-model": "references/artifact-schemas/business-model.json"
+  }
+}

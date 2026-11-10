@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { readFile, realpath } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,19 +8,25 @@ export const name = "reed";
 export const inject = ["webServer", "skills"];
 const origin = "http://127.0.0.1:47831";
 const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)));
+// Bundled Skills are discovered from the package itself so the plugin never keeps
+// a second list of Skill names to maintain.
+const skillNames = readdirSync(join(packageRoot, "skills"), { withFileTypes: true }).filter(entry => entry.isDirectory()).map(entry => entry.name).sort();
 const routes = ["/reed/", "/reed/health", "/reed/resolve", "/reed/view", "/reed/state"];
 
 export function apply(ctx, config = {}) {
-  const skillRoot = join(packageRoot, "skills/swe");
-  const entry = readFileSync(join(skillRoot, "SKILL.md"), "utf8");
-  const description = entry.match(/^description: (.+)$/m)?.[1];
-  if (!description) throw new Error("SWE Skill description missing");
+  const skills = skillNames.map(name => {
+    const skillRoot = join(packageRoot, "skills", name);
+    const entry = readFileSync(join(skillRoot, "SKILL.md"), "utf8");
+    const description = entry.match(/^description: (.+)$/m)?.[1];
+    if (!description) throw new Error(`${name} Skill description missing`);
+    return { name, description, content: entry.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, "") + `\nCLI executable: ${join(packageRoot, "tools/swe-cli/bin", process.platform === "win32" ? "swe-cli.exe" : "swe-cli")}\n`, source: "bundled", path: join(skillRoot, "SKILL.md"), resourceBase: { kind: "directory", path: skillRoot } };
+  });
   let starting;
   let child;
   let disposed = false;
   async function connect() {
     const root = await realpath(config.root || process.cwd());
-    const runtime = JSON.parse(await readFile(join(packageRoot, "skills/swe/runtime.json"), "utf8"));
+    const runtime = JSON.parse(await readFile(join(packageRoot, "tools/swe-cli/runtime.json"), "utf8"));
     async function health() {
       const response = await fetch(origin + "/reed/health", { signal: AbortSignal.timeout(1500) });
       if (!response.ok) throw new Error("ReedHarness health request failed");
@@ -40,7 +46,7 @@ export function apply(ctx, config = {}) {
       }
     }
     if (disposed) throw new Error("ReedHarness plugin disposed");
-    const binary = join(packageRoot, "skills/swe/bin", process.platform === "win32" ? "swe-cli.exe" : "swe-cli");
+    const binary = join(packageRoot, "tools/swe-cli/bin", process.platform === "win32" ? "swe-cli.exe" : "swe-cli");
     child = spawn(binary, ["system-design", "serve", "--root", root, "--expect-version", runtime.version, "--parent-stdin"], { stdio: ["pipe", "pipe", "pipe"] });
     await new Promise((resolve, reject) => {
       let output = "";
@@ -88,7 +94,7 @@ export function apply(ctx, config = {}) {
   ctx.effect(() => {
     const cleanup = [];
     try {
-      cleanup.push(ctx.skills.register({ name: "swe", description, content: entry.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, ""), source: "bundled", path: join(skillRoot, "SKILL.md"), resourceBase: { kind: "directory", path: skillRoot } }));
+      for (const skill of skills) cleanup.push(ctx.skills.register(skill));
       for (const path of routes) cleanup.push(ctx.webServer.register({ kind: "exact", path, handler }));
     } catch (error) { for (const remove of cleanup) remove(); throw error; }
     return () => {

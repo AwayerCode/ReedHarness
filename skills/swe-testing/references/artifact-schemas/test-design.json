@@ -1,0 +1,45 @@
+{
+  "title": "测试设计",
+  "path": "design/test-design/test-design.md",
+  "sections": [
+    {
+      "heading": "文档信息",
+      "columns": [
+        "字段",
+        "值"
+      ]
+    },
+    {
+      "heading": "范围与依据"
+    },
+    {
+      "heading": "风险与验证矩阵",
+      "columns": [
+        "风险标识",
+        "风险与影响",
+        "场景",
+        "预期结果",
+        "验证范围",
+        "决策用途"
+      ]
+    },
+    {
+      "heading": "设计表达与落地校验"
+    },
+    {
+      "heading": "行为与异常场景"
+    },
+    {
+      "heading": "数据环境与替身边界"
+    },
+    {
+      "heading": "执行与清理"
+    },
+    {
+      "heading": "判定与停止条件"
+    },
+    {
+      "heading": "未覆盖范围"
+    }
+  ]
+}

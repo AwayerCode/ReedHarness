@@ -2,5 +2,5 @@
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 version="${1:?explicit release version required}"
-bash "$root/apps/swe-cli/scripts/build-package.sh" "$version"
+bash "$root/apps/swe-cli/scripts/build-package.sh" "${CLI_VERSION:-$version}"
 node "$root/plugins/package.mjs" "$version"

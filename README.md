@@ -8,7 +8,7 @@ ReedHarness 通过 SWE Skill 指导 Agent 完成业务建模、系统设计、�
 
 插件市场分发与固定地址架构服务正在接入：支持静态 HTML 导出、Go 本地实时服务和 DSH 固定路径代理。构建、运行及待完成的市场验收见[插件分发与架构服务](docs/plugin-distribution.md)。市场安装链路验收前保留现有安装方式。
 
-本仓只维护 `skills/swe/`，由 `skills/index.json` 登记独立版本；现有项目安装路径为 `.agents/skills/swe/`，使用方式见[安装指南](docs/usage.md#安装-skill)。文档检查工具独立保存在 `scripts/`，不作为 Skill 分发。
+本仓维护六个完全自包含、彼此无依赖的 Skill，目录名即标识，版本由发行标签确定；每个 Skill 单独安装到 `.agents/skills/<skill-name>/`，使用方式见[安装指南](docs/usage.md#安装-skill)。文档检查工具独立保存在 `scripts/`，不作为 Skill 分发。
 
 ## 为什么需要 ReedHarness
 
@@ -19,7 +19,7 @@ ReedHarness 将架构约束写入 `system-design.yaml`，让设计和代码有�
 ## 工作方式
 
 1. 定义架构：用 YAML 声明层、模块、职责、目录、必要文件与允许依赖。CLI 校验设计，并可生成只读 HTML 架构图。
-2. 按设计实现：Agent 读取 SWE Skill 与项目依据，在授权范围内修改代码、测试和交付配置。
+2. 按设计实现：Agent 直接读取对应专业 Skill 与项目依据，在授权范围内修改代码、测试和交付配置。
 3. 检查实现偏差：CLI 始终核对目录、文件归属和必要文件；匹配到语言适配器时再检查源码依赖，返回违规位置。Agent 根据反馈修正，再执行项目测试与构建。
 
 > YAML 定义约束 → Agent 实现 → CLI 检查 → 根据反馈修正。
@@ -55,11 +55,11 @@ modules:
 
 对应目录为 `src/application/orders/` 和 `src/application/payments/`，各包含一个 `service.go`。设计校验不要求源码已存在；实现检查始终要求目录和必要文件存在。当前内置 Go、TypeScript 和 C++ 适配器，只在检测到对应源码时检查导入或引用；其他语言需要新增适配器才能验证源码依赖，没有适配器时结构检查与源码依赖检查必须分开理解。
 
-安装 SWE 后，在项目根目录执行：
+独立安装 CLI 并加入 PATH 后，在项目根目录执行：
 
 ```bash
-.agents/skills/swe/bin/swe-cli system-design validate --file system-design.yaml
-.agents/skills/swe/bin/swe-cli system-design check --file system-design.yaml
+swe-cli system-design validate --file system-design.yaml
+swe-cli system-design check --file system-design.yaml
 ```
 
 例如项目的 Go module 为 `example.com/shop`，若支付模块导入 `example.com/shop/src/application/orders`，`check` 会报告未允许的模块依赖及文件、行号，并以退出码 `1` 结束。退出码 `0` 表示本次范围通过，`2` 表示无法检查；结果为 JSON。
@@ -74,29 +74,30 @@ modules:
 }
 ```
 
-完整约束与架构图生成方法见 [YAML 模块架构](skills/swe/references/system-design/guide.md)。
+完整约束与架构图生成方法见 [YAML 模块架构](skills/swe-system-design/references/system-design/guide.md)。
 
 ## 快速开始
 
-当前发行版是 `v0.3.0`，包含与本文一致的分发方式与 YAML 架构检查。下面在临时项目中用官方 SWE 包体验一次检查；需要 Bash、curl 和 tar，命令适用于 macOS / Linux。Windows 用法见[使用指南](docs/usage.md)。
+当前源码包含新的分发方式与 YAML 架构检查；已发布的 `v0.3.0` 仍是含 CLI 的平台 Skill 包，不能用它验证本文流程。快速开始使用本地构建的独立 CLI 与所选 Skill 包，在临时项目中体验，不依赖尚未发布的远端包。需要 Go 1.24+、Bash 和 tar；命令适用于 macOS / Linux。
 
-### 准备 SWE
+### 准备 CLI 与 Skill
 
-按本机平台下载发行包（将 `darwin_arm64` 换成 `darwin_amd64`、`linux_amd64` 或 `linux_arm64`），用同页 `SHA256SUMS` 校验后再解压到临时项目：
+在本仓库根目录执行，构建六平台 CLI 和独立 Skill 文本包，并选择本机 CLI：
 
 ```bash
-base="https://github.com/AwayerCode/ReedHarness/releases/download/v0.3.0"
-asset="swe_darwin_arm64.tar.gz"
-curl -fsSL "$base/$asset" -o /tmp/"$asset"
-curl -fsSL "$base/SHA256SUMS" -o /tmp/SHA256SUMS
+apps/swe-cli/scripts/build-package.sh
+reed_package="$PWD/apps/swe-cli/dist/swe-cli_$(go env GOOS)_$(go env GOARCH).tar.gz"
+reed_tools="$(mktemp -d)"
+tar -xzf "$reed_package" -C "$reed_tools"
+export PATH="$reed_tools/swe-cli/bin:$PATH"
+swe-cli version
 reed_demo="$(mktemp -d)"
 mkdir -p "$reed_demo/.agents"
-tar -xzf /tmp/"$asset" -C "$reed_demo/.agents"
+tar -xzf apps/swe-cli/dist/swe-implementation.tar.gz -C "$reed_demo/.agents"
 cd "$reed_demo"
-.agents/skills/swe/bin/swe-cli version
 ```
 
-包内已经包含 Skill、平台二进制和版本摘要清单。这里只把选择的 SWE 包解压到新项目，不复制整个 ReedHarness 仓库，也不需要全局安装。从源码构建时，在仓库根目录执行 `apps/swe-cli/scripts/build-package.sh v0.3.0`，再使用 `apps/swe-cli/dist/` 中对应平台的包。
+CLI 包与 Skill 包分别选择，Skill 仅包含文本方法和参考资源，不含二进制。该示例只安装代码实现 Skill；其他能力按需要独立安装。
 
 ### 完成一次检查
 
@@ -113,29 +114,28 @@ printf 'package payments\n' > src/application/payments/service.go
 
 ### 让 Agent 开始工作
 
-在该项目打开支持 Skill 的 Agent。支持 `.agents/skills/` 的宿主可发现 SWE；其他宿主可以显式读取入口，刷新与启用方式遵循宿主规则。向 Agent 提供任务，例如：
+在该项目打开支持 Skill 的 Agent。支持 `.agents/skills/` 的宿主可发现已安装入口；其他宿主可以显式读取对应专业入口，刷新与启用方式遵循宿主规则。向 Agent 提供任务，例如：
 
-> 读取 `.agents/skills/swe/SKILL.md`，按当前 `system-design.yaml` 实现订单调用支付的最小示例，并补充测试。修改范围为 `src/`，保持现有架构约束，运行实现检查和 Go 测试，报告结果与未验证项。
+> 直接读取 `.agents/skills/swe-implementation/SKILL.md`，按当前 `system-design.yaml` 实现订单调用支付的最小示例。修改范围为 `src/`，保持现有架构约束，运行实现检查和 Go 测试，报告结果与未验证项。
 
-接入已有项目时，使用包内的 [adoption](skills/swe/adoption/SKILL.md) 组织 YAML 建立、修订和检查接入。现有设计仍是权威依据，不从代码自动覆盖重建。
+接入已有项目时，可独立安装 [swe-adoption](skills/swe-adoption/SKILL.md) 维护 CLI 检查接线、接入记录与工具生命周期。现有设计仍是权威依据，不从代码自动覆盖重建。
 
 实际业务项目的安装、Windows 使用、版本管理与旧安装迁移见[使用指南](docs/usage.md)。
 
 ## 能力与当前范围
 
-SWE 统一安装，按任务选择业务模型、系统设计、代码实现、测试或发布交付五个领域；它们表示职责与产物边界，不要求顺序执行。接入、更新和退出由同包的 adoption 组织。
+六个专业与接入 Skill 分别分发、安装和升级，可独立发现和直接调用：`swe-business-model`、`swe-system-design`、`swe-implementation`、`swe-testing`、`swe-delivery`、`swe-adoption`。它们表示职责与产物边界，不要求顺序执行；每个目录保存自身需要的完整方法、模板和参考 Schema，不引用或组织其他 Skill。
 
-`swe-cli` 提供 YAML 架构、文档、产物关系、目录结构和改动范围检查。YAML 的目录、文件归属与必要文件检查不依赖语言；源码依赖由可选语言适配器检查，当前内置 Go、TypeScript 和 C++。未匹配适配器的语言会明确标记为源码依赖未验证。即使启用适配器，也不验证函数调用、类型语义或业务行为；各适配器的解析限制见 [YAML 规范](skills/swe/references/system-design/guide.md#语言适配器边界)。
+`swe-cli` 提供 YAML 架构、文档、产物关系、目录结构和改动范围检查。YAML 的目录、文件归属与必要文件检查不依赖语言；源码依赖由可选语言适配器检查，当前内置 Go、TypeScript 和 C++。未匹配适配器的语言会明确标记为源码依赖未验证。即使启用适配器，也不验证函数调用、类型语义或业务行为；各适配器的解析限制见 [YAML 规范](skills/swe-system-design/references/system-design/guide.md#语言适配器边界)。
 
-`reed` 负责查找与分发选定的 Skill，`swe-cli` 随 SWE 包交付。ReedHarness 不接管 Agent 运行时；当前聚焦独立任务，不提供任务调度器，Bug 修复与需求开发等专门流程暂未建设。
+`reed` 负责查找与分发选定的 Skill，`swe-cli` 通过独立平台包交付并加入 PATH。ReedHarness 不接管 Agent 运行时；当前聚焦独立任务，不提供任务调度器，Bug 修复与需求开发等专门流程暂未建设。
 
 ## 文档与贡献
 
 - [使用指南](docs/usage.md)：安装、项目接入、换版、移除与迁移。
-- [SWE 入口](skills/swe/SKILL.md)：专业方法、共享规范和项目接入。
-- [CLI 参考](skills/swe/references/cli.md)：命令参数、输出与检查边界。
+- [CLI 参考](docs/cli.md)：命令参数、输出与检查边界。
 - [系统设计](docs/system-design.md)与[接口协议](docs/interface-protocol.md)：内部职责与目标方案；其中待实施内容不代表当前能力。
-- [贡献指南](CONTRIBUTING.md)：Skill 版本登记、构建与发布；本地验证遵循 [AGENTS.md](AGENTS.md#本地验证)。
+- [贡献指南](CONTRIBUTING.md)：Skill 维护、构建与发布；本地验证遵循 [AGENTS.md](AGENTS.md#本地验证)。
 
 ## 许可证
 

@@ -19,7 +19,7 @@ func TestSkillCommandContracts(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	doc, err := os.ReadFile(filepath.Join(root, "skills/swe/references/cli.md"))
+	doc, err := os.ReadFile(filepath.Join(root, "docs/cli.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,10 +33,10 @@ func TestSkillCommandContracts(t *testing.T) {
 	}
 	repl := strings.NewReplacer(
 		"<项目根目录>", root,
-		"<模型路径>", "skills/swe/business-model/assets/business-model.md",
-		"<Markdown路径>", "skills/swe/system-design/assets/system-design.md",
-		"<协议路径>", "skills/swe/system-design/assets/interface-protocol.md",
-		"<测试设计路径>", "skills/swe/testing/assets/test-design.md",
+		"<模型路径>", "skills/swe-business-model/assets/business-model.md",
+		"<Markdown路径>", "skills/swe-system-design/assets/system-design.md",
+		"<协议路径>", "skills/swe-system-design/assets/interface-protocol.md",
+		"<测试设计路径>", "skills/swe-testing/assets/test-design.md",
 		"<相对路径>", "apps/swe-cli",
 		"<固定版本>", Version,
 	)

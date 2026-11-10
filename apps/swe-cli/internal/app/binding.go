@@ -12,8 +12,8 @@ import (
 	"strings"
 )
 
-// RunInstalled verifies a companion installed beside a Skill binding. Standalone
-// downloads without a binding remain usable for explicit developer invocations.
+// RunInstalled verifies the CLI runtime binding beside its bin directory.
+// Developer binaries without a binding remain usable.
 func RunInstalled(args []string, in io.Reader, out io.Writer) int {
 	executable, e := os.Executable()
 	if e != nil {
@@ -30,15 +30,6 @@ func verifyBinding(executable string) error {
 	}
 	data, e := os.ReadFile(filepath.Join(filepath.Dir(filepath.Dir(executable)), "runtime.json"))
 	if os.IsNotExist(e) {
-		root := filepath.Dir(filepath.Dir(executable))
-		_, entryErr := os.Lstat(filepath.Join(root, "SKILL.md"))
-		installed := filepath.Base(filepath.Dir(root)) == "skills" && filepath.Base(filepath.Dir(filepath.Dir(root))) == ".agents"
-		if entryErr == nil || installed {
-			return fmt.Errorf("missing companion runtime.json in %s; reinstall the complete Skill package", root)
-		}
-		if !os.IsNotExist(entryErr) {
-			return entryErr
-		}
 		return nil
 	}
 	if e != nil {

@@ -2,7 +2,7 @@
 
 ## 目标与当前状态
 
-ReedHarness 以插件市场作为正式安装、更新入口。发布包包含 SWE Skill、配套 Go 二进制和宿主适配，不包含完整源码仓库。Skill 方法与渲染核心只维护一份。
+ReedHarness 以插件市场作为正式安装、更新入口。宿主包可以组合六个独立 Skill、独立 CLI 与宿主适配，但不改变各自的安装契约。Skill 目录仅有自包含文本资源，CLI 放在独立工具目录，不进入任何 Skill。
 
 当前提供六平台插件验证包、Codex 和 Claude 清单，以及 DSH 后台和页签适配。尚未发布到市场，也未完成各宿主实机安装验收，因此现有安装入口暂时保留；新链路验收后再移除旧入口。
 
@@ -24,7 +24,7 @@ ReedHarness 以插件市场作为正式安装、更新入口。发布包包含 S
 
 插件通过 `webServer` 注册 `/reed/`、`/reed/health`、`/reed/resolve`、`/reed/view`、`/reed/state` 固定路由，转发给 Go。前端把会话目录提交给 Go 解析真实路径并验证工作区边界，使用返回的项目 URL 展示同源 iframe。
 
-插件通过 `skills.register` 注册 SWE 入口和资源目录，文档、Schema 和 CLI 从同一插件包加载。
+插件通过 `skills.register` 分别注册六个 `swe-*` 入口，不注册总协调入口。每个 Skill 从自身目录加载必要文档和参考 Schema，彼此无依赖；宿主将独立 CLI 暴露为 `swe-cli` 命令。插件组合发行不要求六项内容版本一致。
 
 插件配置 `root` 为项目共同工作区；未配置时使用 DSH 进程工作目录。配置条目示例：
 
@@ -56,10 +56,10 @@ Go 服务只允许同源嵌入，原单文件预览仍禁止嵌入。代理保�
 bash plugins/build.sh 0.1.0
 ```
 
-版本为无 `v` 前缀的 SemVer。复用现有 SWE 六平台构建，输出 `apps/swe-cli/dist/reed-plugin_<系统>_<架构>.tar.gz`，展开目录在 `apps/swe-cli/dist/plugins/<版本>/<平台>/`。包内 `runtime.json` 固定 CLI 版本与摘要。
+版本为无 `v` 前缀的 SemVer。复用独立 CLI 六平台构建及六个纯文本 Skill 包，输出 `apps/swe-cli/dist/reed-plugin_<系统>_<架构>.tar.gz`，展开目录在 `apps/swe-cli/dist/plugins/<版本>/<平台>/`。包内 `runtime.json` 固定 CLI 版本与摘要。
 
 Codex、Claude 清单由相同版本生成，均引用 `./skills/`，各平台验证包包含完整运行资源。两个市场的平台选择及实际安装仍需验证，不能将构建成功描述为市场可安装。
 
-DSH npm 主包位于构建目录的 `dsh-reed/`，六个平台子包为 `dsh-reed-<系统>-<架构>/`。主包以固定版本的 `optionalDependencies` 选择平台，安装脚本校验版本和 SHA-256 后将二进制放入 Skill。禁用安装脚本时需显式运行包内 `node install.mjs`。发布顺序为六个子包、主包、市场登记；本地平台验证归档不是六次同名 npm 发布。
+DSH npm 主包位于构建目录的 `dsh-reed/`，六个平台子包为 `dsh-reed-<系统>-<架构>/`。主包以固定版本的 `optionalDependencies` 选择平台，安装脚本校验子包 SHA-256 后将二进制放入独立工具目录并向宿主暴露命令；插件版本不与 CLI 版本绑定，`runtime.json` 自带 CLI 版本由服务启动时核对。禁用安装脚本时需显式运行包内 `node install.mjs`。发布顺序为六个子包、主包、市场登记；本地平台验证归档不是六次同名 npm 发布。
 
 接口依据见 [Codex 插件打包](https://developers.openai.com/plugins/build/plugins)、[Claude 插件清单](https://code.claude.com/docs/en/plugins-reference)和 [DSH Skill 注册接口](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/skill/skill/src/index.ts)。

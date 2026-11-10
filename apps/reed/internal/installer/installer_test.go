@@ -223,6 +223,23 @@ func TestExistingSkillIsNeverOverwritten(t *testing.T) {
 	}
 }
 
+// Comparing an installed Skill against another version needs a dry run that still
+// reads the package, so an existing destination is not a dry-run failure.
+func TestInstallDryRunToleratesExistingSkill(t *testing.T) {
+	project := t.TempDir()
+	writeProjectFile(t, project, "skills/swe/SKILL.md", "local", 0644)
+	archive := newArchiveServer(t, archiveFiles{"skills/swe/SKILL.md": {body: skillBody("swe"), mode: 0644}, "skills/swe/references/rule.md": {body: "rule", mode: 0644}})
+	manager := Manager{ProjectRoot: project, Client: archive.Client(), DryRun: true}
+	results, err := manager.Install(context.Background(), archive.URL, "tag:v1", []string{"skills/swe"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 1 || results[0].Path != ".agents/skills/swe" || results[0].Files != 2 {
+		t.Fatalf("unexpected dry run: %+v", results)
+	}
+	assertFile(t, project, "skills/swe/SKILL.md", "local")
+}
+
 func TestListFindsManuallyInstalledSkillsWithoutWriting(t *testing.T) {
 	project := t.TempDir()
 	writeProjectFile(t, project, "skills/custom/SKILL.md", skillBody("custom"), 0644)
@@ -338,12 +355,11 @@ func TestLateConflictRollsBackOnlyThisInstall(t *testing.T) {
 }
 
 func TestThirdPartyInstallCompatibility(t *testing.T) {
-	for _, requested := range []string{"skills/external", "skills/3rdparty/external"} {
+	for _, requested := range []string{"skills/3rdparty/external"} {
 		for _, dryRun := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%s/dry=%v", requested, dryRun), func(t *testing.T) {
 				project := t.TempDir()
 				archive := newArchiveServer(t, archiveFiles{
-					"skills/index.json":                       {body: `{"schema_version":1,"skills":[{"name":"external","path":"skills/3rdparty/external","description":"test"}]}`, mode: 0644},
 					"skills/3rdparty/external/SKILL.md":       {body: skillBody("external"), mode: 0644},
 					"skills/3rdparty/external/LICENSE":        {body: "license preserved", mode: 0644},
 					"skills/3rdparty/external/scripts/run.sh": {body: "#!/bin/sh\n", mode: 0755},
@@ -396,21 +412,20 @@ func TestThirdPartyRejectsAmbiguousAndUnsafeTargets(t *testing.T) {
 		}
 	}
 }
-func TestCatalogCannotRedirectInstallOutsideSkill(t *testing.T) {
-	for _, body := range []string{
-		`{"schema_version":1,"skills":[{"name":"external","path":"../external","description":"test"}]}`,
-		`{"schema_version":1,"skills":[{"name":"external","path":"skills/3rdparty/other","description":"test"}]}`,
-		`broken`,
-	} {
-		project := t.TempDir()
-		archive := newArchiveServer(t, archiveFiles{"skills/index.json": {body: body, mode: 0644}, "skills/external/SKILL.md": {body: skillBody("external"), mode: 0644}})
-		manager := Manager{ProjectRoot: project, Client: archive.Client()}
-		if _, err := manager.Install(context.Background(), archive.URL, "tag:v1", []string{"skills/external"}); err == nil {
-			t.Fatal("accepted invalid catalog")
-		}
-		entries, _ := os.ReadDir(project)
-		if len(entries) != 0 {
-			t.Fatal("invalid install wrote project")
-		}
+
+// Without a registry only the requested path is read; a flat request is not
+// rewritten to a nested third-party directory.
+func TestFlatRequestIsNotRewrittenToThirdParty(t *testing.T) {
+	project := t.TempDir()
+	archive := newArchiveServer(t, archiveFiles{
+		"skills/3rdparty/external/SKILL.md": {body: skillBody("external"), mode: 0644},
+	})
+	manager := Manager{ProjectRoot: project, Client: archive.Client()}
+	if _, err := manager.Install(context.Background(), archive.URL, "tag:v1", []string{"skills/external"}); err == nil {
+		t.Fatal("flat path resolved without an index")
+	}
+	entries, _ := os.ReadDir(project)
+	if len(entries) != 0 {
+		t.Fatal("failed install wrote project")
 	}
 }

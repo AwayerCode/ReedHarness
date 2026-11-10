@@ -93,7 +93,7 @@ func TestAdoptionRetainedToolAfterUpdateAndExit(t *testing.T) {
 	for _, operation := range []string{"update", "exit"} {
 		t.Run(operation, func(t *testing.T) {
 			root := adoptionRepo(t)
-			installed := filepath.Join(root, ".agents", "skills", "swe")
+			installed := filepath.Join(root, ".tools", "swe-cli")
 			original := adoptionPackage(t, installed)
 			retained := filepath.Join(t.TempDir(), "swe")
 			if err := os.CopyFS(retained, os.DirFS(installed)); err != nil {
@@ -102,7 +102,7 @@ func TestAdoptionRetainedToolAfterUpdateAndExit(t *testing.T) {
 			tool := filepath.Join(retained, "bin", filepath.Base(original))
 			adoptionCLI(t, tool, 0, "version")
 			baseline := filepath.Join(t.TempDir(), "scope.json")
-			adoptionCLI(t, tool, 0, "scope", "snapshot", "--root", root, "--baseline", baseline, "--allow-dir", ".agents/skills/swe")
+			adoptionCLI(t, tool, 0, "scope", "snapshot", "--root", root, "--baseline", baseline, "--allow-dir", ".tools/swe-cli")
 			if operation == "update" {
 				candidate := filepath.Join(t.TempDir(), "swe")
 				next := adoptionPackage(t, candidate)

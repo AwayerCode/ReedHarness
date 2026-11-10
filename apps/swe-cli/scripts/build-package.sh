@@ -4,9 +4,12 @@ set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 version="${1:-$(git -C "$root" describe --tags --match 'v[0-9]*' --always --dirty 2>/dev/null || printf 'dev')}"
 dist="${DIST_DIR:-$root/dist}"
-(cd "$root/../reed" && go test ./internal/installer -run Catalog)
+(cd "$root/../reed" && go test ./internal/installer)
 mkdir -p "$dist"
 dist="$(cd "$dist" && pwd)"
+
+# Rebuild only this run's assets; keep bin/ and plugins/ for reuse.
+rm -f "$dist"/swe-cli_* "$dist"/swe-*.tar.gz "$dist"/swe_*.tar.gz "$dist"/SHA256SUMS
 
 mkdir -p "$dist/bin"
 
@@ -42,4 +45,4 @@ done
   go run ./internal/skillpackage --version "$version" --dist "$dist/bin" --out "$dist" --root ../..
 )
 
-printf 'built complete SWE Skill packages %s in %s\n' "$version" "$dist"
+printf 'built independent CLI and Skill packages %s in %s\n' "$version" "$dist"

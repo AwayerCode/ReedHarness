@@ -1,3 +1,0 @@
-interface:
-  display_name: "业务模型"
-  short_description: "定义、修订或审查业务实体、行为、流程与规则，只维护业务模型，不修改架构、代码、测试或部署产物。"

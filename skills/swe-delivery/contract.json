@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "inputs": [
+    "system-design-yaml",
+    "system-design",
+    "test-design"
+  ],
+  "outputs": [],
+  "schemas": {
+    "test-design": "references/artifact-schemas/test-design.json",
+    "system-design": "references/artifact-schemas/system-design.json",
+    "system-design-yaml": "references/system-design/schema.json"
+  }
+}

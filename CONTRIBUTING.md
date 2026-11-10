@@ -2,31 +2,26 @@
 
 开发与验证遵循 [AGENTS.md](AGENTS.md)。修改范围、验证命令与发布授权以仓库约定为准。
 
-## Skill 版本登记
+## Skill 维护
 
-[skills/index.json](skills/index.json) 只登记 SWE 的独立版本、仓库路径和来源字段，`schema_version` 表示登记表结构版本。名称和简介与 `skills/swe/SKILL.md` 同步维护；构建测试检查登记是否完整，以及目录、名称、简介是否一致（简介比较忽略换行与重复空白）。
+`skills/` 下的六个目录就是唯一事实来源，仓库不维护登记表：构建、插件打包和安装都直接读取目录与 `SKILL.md`，无需同步第二份名称或简介清单。新增 Skill 只需创建 `skills/<name>/SKILL.md`，名称与目录一致，小写字母、数字和单连字符，最长 64 字符。
 
-| 字段 | 含义 |
-| --- | --- |
-| `name` | 唯一名称，与目录名一致，使用小写字母、数字和单连字符，最长 64 字符 |
-| `path` | 本仓相对路径，SWE 为 `skills/swe`，不改变安装后的名称 |
-| `description` | 与 `SKILL.md` frontmatter 一致的简介，用于搜索 |
-| `version` | 本仓库维护的 Skill 版本，与 ReedHarness 和 SWE CLI 版本独立 |
-| `updated_at` | 当前 Skill 内容的更新时间；已有内容初始化时取最近一次目录提交时间 |
-| `source.repository`、`source.path` | SWE 为自有能力，两项均为 `null`；保留字段以维持登记表结构兼容 |
+Skill 的版本由发行标签或 commit 标识，不单独维护语义版本号。修改内容时同步该 Skill 的 `SKILL.md` frontmatter 简介；历史由 Git 保存。`reed install --path skills/swe-xxx` 只安装选定目录，不展开其他入口，`--version` 选择仓库标签或 commit。
 
-时间使用带时区的 RFC 3339 格式。初始登记的 Skill 从 `0.1.0` 建立独立版本基线，不代表追溯认定历史发布版本。后续内容修正递增 PATCH、兼容能力增加递增 MINOR、不兼容的使用契约变化递增 MAJOR；内容与版本、`updated_at` 同次提交。只修订登记信息时不改变内容版本或内容更新时间。历史记录由 Git 保存。
+每个 Skill 自带必要方法、模板、专业规范和参考 Schema，不链接或感知其他 Skill，不组织跨 Skill 交接。宿主已有的通用行为规范不整套复制。CLI 固有 Schema 位于 `apps/swe-cli/resources/`，由 CLI 生成内嵌资源；Skill 中的参考副本用于理解自身输入输出，不是 CLI 运行时依赖，`(cd apps/swe-cli && go test ./internal/checks)` 会拒绝两者漂移。
 
-SWE 内容修改时更新 `updated_at` 和独立版本；仅清理其他登记项或迁移目录且 SWE 内容不变时，不递增 SWE 版本或更新时间。历史内容由 Git 保存。
+只有产出机器可校验产物的 Skill 才带 `contract.json`，用来声明适用产物类型和包内参考 Schema 位置；`swe-adoption` 不产出这类产物，因此没有该文件。
 
-现有 CLI 使用登记表搜索，SWE 安装到 `.agents/skills/swe/`，同名目标拒绝覆盖。历史归档的路径解析及相应兼容测试保留，不表示当前仓库继续分发其他 Skill。
+## 独立构建与发行
 
-CLI 尚不按这些独立版本解析安装目标，也不能用它们替代安装命令的 `--version`：安装仍选择仓库标签或 commit。SWE 配套二进制版本继续由其 `runtime.json` 固定。
+`apps/swe-cli/scripts/build-package.sh <版本>` 构建六平台独立 `swe-cli_<os>_<arch>.tar.gz`，内含 `swe-cli/bin/` 与版本摘要清单；同时为 `skills/` 下每个 Skill 生成独立的 `<skill-name>.tar.gz` 文本包，归档保存 `skills/<skill-name>/`。Skill 包只接受 UTF-8 文本：含 NUL 或其他二进制内容的文件使构建失败，归档统一以 `0644` 保存。Skill 包不带二进制或运行时绑定清单，与操作系统无关。CLI 使用独立 PATH，不依赖 Skill 安装路径。
 
-## 开发版配套检查工具
+`apps/reed/scripts/build-release.sh <版本>` 构建 reed 发行物并汇集独立 CLI、Skill 包与摘要；即使同次上传到 ReedHarness Release，仍是分别选择、安装和更新的资源。可通过 `CLI_VERSION` 环境变量独立指定 CLI 版本；默认沿用发行版本。构建不修改 Skill 源码，未上传的产物不能声称远端可安装。
 
-仓库只创建 ReedHarness Release。`apps/reed/scripts/build-release.sh <版本>` 构建六平台 reed，并调用 SWE 打包脚本，将六个 `swe_<系统>_<架构>.tar.gz` 与 reed 一起放入 `apps/reed/dist/`，生成统一 `SHA256SUMS`。SWE CLI 只存在于 Skill 包内部，不发布裸二进制或 `swe-cli-v*` 标签。
+跨平台构建不替代实机验收。完整开发验证见[本地验证](AGENTS.md#本地验证)，CLI 开发说明见 [SWE CLI](apps/swe-cli/README.md)。
 
-`apps/swe-cli/scripts/build-package.sh <版本>` 可独立用于本地打包验收；中间二进制位于其 `dist/bin/`。打包前校验 SWE 登记表，再从 SWE 源码复制方法与资源，加入对应平台 CLI，并生成不含下载地址的 `runtime.json`。构建不修改 Skill 源码；完整包发布前不能承诺远端安装可用。
+## 方法与规则维护
 
-跨平台构建不替代实机验收。完整开发验证见[本地验证](AGENTS.md#本地验证)，检查核心的开发说明见 [SWE CLI](apps/swe-cli/README.md)。
+区分通用工具维护与项目采用；项目特例保存在项目约定，不自动提升为通用规则。修改方法时保留有效判断、案例和职责边界，为关键约束明确对象、依据、检查方式及失败处理。格式参考与 CLI 检查语义保持兼容，语义判断不强行脚本化。
+
+检查器使用有意义的合法和违规样例，既验证合格产物通过，也验证违规被阻止。每个 Skill 应在仅有自身目录时通过链接与资源完整性检查，不依赖安装其他 Skill。检查版本兼容、引用、纯文本包内容和独立安装；构建或安装变化运行相应测试，不自动提交或发布。

@@ -44,13 +44,7 @@ func (m *Manager) Install(ctx context.Context, rawSource, version string, reques
 	}
 	skillsRoot := filepath.Join(m.ProjectRoot, ".agents", "skills")
 	for _, target := range targets {
-		destination := filepath.Join(skillsRoot, path.Base(target))
-		if err := checkParents(m.ProjectRoot, destination); err != nil {
-			return nil, err
-		}
-		if _, err := os.Lstat(destination); err == nil {
-			return nil, fmt.Errorf("Skill %q already exists; install into a separate directory to compare before replacing it", destination)
-		} else if !errors.Is(err, os.ErrNotExist) {
+		if err := m.checkDestination(skillsRoot, target); err != nil {
 			return nil, err
 		}
 	}
@@ -60,7 +54,7 @@ func (m *Manager) Install(ctx context.Context, rawSource, version string, reques
 	}
 	defer os.RemoveAll(stage)
 	content := filepath.Join(stage, "content")
-	candidates := append([]string{"skills/index.json"}, targets...)
+	candidates := append([]string(nil), targets...)
 	for _, target := range targets {
 		if strings.Count(target, "/") == 1 && strings.HasPrefix(target, "skills/") {
 			candidates = append(candidates, "skills/3rdparty/"+path.Base(target))
@@ -69,12 +63,11 @@ func (m *Manager) Install(ctx context.Context, rawSource, version string, reques
 	if err := source.FetchOptional(ctx, m.Client, archiveURL, nil, candidates, content); err != nil {
 		return nil, err
 	}
-	targets, err = resolveCatalogTargets(content, targets)
-	if err != nil {
-		return nil, err
-	}
 	results := make([]Result, 0, len(targets))
 	for _, target := range targets {
+		if err := m.checkDestination(skillsRoot, target); err != nil {
+			return nil, err
+		}
 		root := filepath.Join(content, filepath.FromSlash(target))
 		data, err := os.ReadFile(filepath.Join(root, "SKILL.md"))
 		if err != nil {
@@ -137,6 +130,29 @@ func (m *Manager) Install(ctx context.Context, rawSource, version string, reques
 		}
 	}
 	return results, nil
+}
+
+// checkDestination reserves the planned location for one Skill. Dry runs only
+// validate the parent path so a selected version can still be inspected next to
+// an already installed Skill.
+func (m *Manager) checkDestination(skillsRoot, target string) error {
+	destination := filepath.Join(skillsRoot, path.Base(target))
+	if err := checkParents(m.ProjectRoot, destination); err != nil {
+		return err
+	}
+	if _, err := os.Lstat(destination); err == nil {
+		if m.DryRun {
+			return nil
+		}
+		relative, err := filepath.Rel(m.ProjectRoot, destination)
+		if err != nil {
+			relative = destination
+		}
+		return fmt.Errorf("%s already exists; install into a separate directory to compare before replacing it", filepath.ToSlash(relative))
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	return nil
 }
 
 func copySkill(ctx context.Context, sourceRoot, destination string) error {
@@ -226,33 +242,4 @@ func normalizeTargets(requested []string) ([]string, error) {
 	}
 	sort.Strings(targets)
 	return targets, nil
-}
-
-// Catalog paths are authoritative when present. Legacy flat paths are aliases;
-// archives without a catalog (including platform packages) retain direct lookup.
-func resolveCatalogTargets(root string, targets []string) ([]string, error) {
-	catalog, err := readCatalog(root)
-	if errors.Is(err, os.ErrNotExist) {
-		return targets, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	byName := map[string]string{}
-	for _, skill := range catalog {
-		byName[skill.Name] = skill.Path
-	}
-	resolved := append([]string(nil), targets...)
-	for i, target := range targets {
-		location, ok := byName[path.Base(target)]
-		if !ok || strings.HasPrefix(target, "Skills/") {
-			continue
-		}
-		if strings.Count(target, "/") == 1 {
-			resolved[i] = location
-		} else if location != target {
-			return nil, fmt.Errorf("requested path %q differs from catalog path %q", target, location)
-		}
-	}
-	return resolved, nil
 }

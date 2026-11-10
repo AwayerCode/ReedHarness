@@ -18,7 +18,7 @@
 
 ## YAML 模块架构
 
-新增 `system-design list/validate/check/render/preview` 入口，执行结构化设计校验、语言无关的目录与文件归属检查，并生成可展开、可追踪依赖的只读 HTML。`check` 按检测到的源码调用内置 Go、TypeScript 或 C++ 适配器；其他语言在结构检查后明确列为源码依赖未验证。采用规则、限制与示例见 [YAML 模块架构](../../skills/swe/references/system-design/guide.md)。`validate --profile layers` 用于层设计交接，完整验收要求存在模块；该入口不并入 JSON 协议版本 2。
+新增 `system-design list/validate/check/render/preview` 入口，执行结构化设计校验、语言无关的目录与文件归属检查，并生成可展开、可追踪依赖的只读 HTML。`check` 按检测到的源码调用内置 Go、TypeScript 或 C++ 适配器；其他语言在结构检查后明确列为源码依赖未验证。采用规则、限制与示例见 [YAML 模块架构](../../skills/swe-system-design/references/system-design/guide.md)。`validate --profile layers` 用于层设计交接，完整验收要求存在模块；该入口不并入 JSON 协议版本 2。
 
 受控查看使用 `swe-cli system-design preview --file /absolute/project/system-design.yaml --expect-version <固定版本>`。命令验证版本和 YAML 后输出本机 URL，默认打开系统浏览器，使用 `--no-open` 可由宿主自行展示。服务持续前台运行，Ctrl-C 或终止进程时停止；重复启动同一 YAML 和同一 CLI 构建会复用服务并退出新命令。页面每秒检查 YAML 并自动更新；校验失败或连接中断时遮罩标注旧图已过期或可能过期，修复后自动恢复。不接受磁盘 HTML，不输出中间页面文件。`render` 仅用于离线导出。版本声明不能替代安装包和运行权限保护。
 
@@ -34,7 +34,7 @@ swe-cli scope check --root /absolute/project --baseline /tmp/new-baseline.json
 swe-cli scope readonly --root /absolute/project
 ```
 
-完整参数与边界见 [SWE CLI 入口](../../skills/swe/references/cli.md)。readonly 的 sha256 字段含格式前缀，保存后原样传给 expected。旧脚本基线和指纹明确拒绝，不自动重建或迁移正在使用的基线。
+完整参数与边界见 [SWE CLI 入口](../../docs/cli.md)。readonly 的 sha256 字段含格式前缀，保存后原样传给 expected。旧脚本基线和指纹明确拒绝，不自动重建或迁移正在使用的基线。
 
 ## JSON 协议
 
@@ -73,9 +73,9 @@ go generate ./...
 ../../scripts/verify.sh
 ```
 
-统一验证入口需要 Node.js 18+ 与 Python 3，依次执行两套 Go 模块的竞态测试与 vet、架构图交互逻辑测试、格式及文档检查、六平台构建。缺少工具或任一检查失败均返回非零，不跳过交互测试；可用 `NODE_BINARY`、`PYTHON_BINARY` 指定开发工具路径。浏览器实际交互仍需人工或浏览器验收，Node 测试不替代该验证。
+统一验证入口需要 Node.js 18+ 与 Python 3，依次执行两套 Go 模块的竞态测试与 vet、架构图交互逻辑测试、格式及文档检查、六平台构建、插件打包与 DSH 集成测试。缺少工具或任一检查失败均返回非零，不跳过交互测试；可用 `NODE_BINARY`、`PYTHON_BINARY` 指定开发工具路径。浏览器实际交互仍需人工或浏览器验收，Node 测试不替代该验证。
 
-schema 从唯一来源 `skills/swe/references/artifact-schemas/` 生成并编入二进制；测试检查来源一致性、模块契约引用和 Skill 链接。生成文件不可手改。
+Schema 从 CLI 自有的 `resources/artifact-schemas/` 与 `resources/system-design/schema.json` 生成并编入二进制；测试检查生成来源一致性、单个 Skill 的资源闭包（含 contract 引用不越出自身目录），以及 Skill 参考副本与 CLI 资源、`docs/cli.md` 的漂移。生成文件不可手改。
 
 迁移用例保存在 internal/app/testdata，包含由旧 Python 检查器生成的 95 个正反例及预期退出码，执行不需要 Python。另有显式场景引用、权限、符号链接、子模块、基线保护、工具版本与摘要回归测试。独立二进制测试使用无语言运行时 PATH。
 
@@ -89,12 +89,12 @@ schema 从唯一来源 `skills/swe/references/artifact-schemas/` 生成并编入
 
 ## 配套分发
 
-SWE 不单独发布 CLI。`scripts/build-package.sh <版本>` 构建 macOS、Linux、Windows 的 amd64/arm64 CLI，在 `dist/` 生成六个完整 `swe_<系统>_<架构>.tar.gz` 与包摘要；`dist/bin/` 是不发布的中间产物。版本参数与编入 CLI 的版本一致。
+`scripts/build-package.sh <版本>` 构建 macOS、Linux、Windows 的 amd64/arm64 CLI，在 `dist/` 生成六个 `swe-cli_<系统>_<架构>.tar.gz`，并为每个 Skill 生成独立的 `<skill-name>.tar.gz`。Skill 包只有自身资源，不携带二进制，也不依赖其他 Skill。CLI 包与 Skill 包各自独立下载，版本由同一次发行标签标识。
 
-每个压缩包包含完整 `skills/swe/`、本平台 `bin/swe-cli`（Windows 为 `.exe`）和生成的 `runtime.json`。清单包含 schema_version、工具名称、版本和本平台 SHA256，不包含 URL；源目录不保存生成清单。各领域共用包根的 CLI，打包不修改源码或自动执行 go generate。
+CLI 包包含 `swe-cli/bin/swe-cli`（Windows 为 `.exe`）及 `swe-cli/runtime.json`。清单包含 schema_version、工具名称、版本和本平台 SHA256，不包含 URL。保留包目录结构，将其 bin 目录加入 PATH 后即可调用 `swe-cli`；运行时核对工具版本和自身摘要。
 
-仓库仅创建 ReedHarness Release。`../reed/scripts/build-release.sh <版本>` 统一构建 reed 与上述 Skill 包，将 reed 二进制、六个平台 Skill 包及统一 SHA256SUMS 写入 ReedHarness 发行目录。上传这些资源，不另建 swe-cli Release，也不上传裸 swe-cli 二进制。重新构建必须使用配套生成的新包和摘要。
+`../reed/scripts/build-release.sh <版本>` 将 reed 二进制、独立 CLI 包、独立 Skill 包及统一 SHA256SUMS 写入 ReedHarness 发行目录。共用 Release 是发布便利，不构成 Skill 之间的依赖。打包不修改源码或自动执行 go generate。
 
-reed 只下载并安装 Skill 包，不解析运行时清单或发起 CLI 下载。CLI 从 Skill 的 bin 目录启动时按包内清单核对版本和自身摘要；选择错误平台的包无法运行。已有目录拒绝覆盖，换版先安装到临时项目并对比，再显式替换。
+reed 只安装用户明确选择的 Skill，不安装兄弟 Skill，也不解析运行时清单或自动下载 CLI。已有目录拒绝覆盖，换版先安装到临时项目并对比，再显式替换。CLI 独立升级。
 
-包内容与安装行为已有本地测试；远端安装需先发布 ReedHarness 及完整包。六平台构建不等于实机运行验证，当前实际运行覆盖 macOS arm64；最低系统版本仍需发行验收。
+包内容与安装行为有本地测试；远端安装需先发布对应资源。六平台构建不等于实机运行验证，当前实际运行覆盖 macOS arm64；最低系统版本仍需发行验收。

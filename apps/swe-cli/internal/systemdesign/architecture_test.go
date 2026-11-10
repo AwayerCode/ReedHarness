@@ -55,7 +55,7 @@ func has(r Report, rule string) bool {
 	return false
 }
 func TestSchemaMatchesCanonical(t *testing.T) {
-	b, e := os.ReadFile("../../../../skills/swe/references/system-design/schema.json")
+	b, e := os.ReadFile("../../resources/system-design/schema.json")
 	if e != nil || string(b) != SchemaJSON {
 		t.Fatal("run go generate", e)
 	}

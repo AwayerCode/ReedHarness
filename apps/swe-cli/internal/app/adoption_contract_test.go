@@ -11,7 +11,7 @@ import (
 // Adoption uses the installed package's commands on the real scope; discovery
 // must remain distinct from validation, and checks must not rewrite the design.
 func TestAdoptionCommandContracts(t *testing.T) {
-	doc, err := os.ReadFile("../../../../skills/swe/adoption/references/existing-project.md")
+	doc, err := os.ReadFile("../../../../skills/swe-adoption/references/existing-project.md")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,11 +37,11 @@ func TestAdoptionCommandContracts(t *testing.T) {
 			}
 			count := 0
 			for _, line := range strings.Split(string(doc), "\n") {
-				if !strings.HasPrefix(line, "<CLI> ") {
+				if !strings.HasPrefix(line, "swe-cli system-design ") {
 					continue
 				}
 				count++
-				command := strings.TrimPrefix(line, "<CLI> ")
+				command := strings.TrimPrefix(line, "swe-cli ")
 				command = strings.NewReplacer("<项目根目录>", root, "<YAML路径>", "system-design.yaml").Replace(command)
 				args := strings.Fields(command)
 				var out bytes.Buffer

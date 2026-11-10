@@ -1,3 +1,0 @@
-interface:
-  display_name: "代码实现"
-  short_description: "依据业务与架构契约实现或审查指定模块的生产代码、技术适配和运行组装；可运行已有测试，但不新增或修改测试。"

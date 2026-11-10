@@ -44,8 +44,8 @@ func TestMissingRuntimeBinding(t *testing.T) {
 		skill, installed, wantError bool
 	}{
 		{"standalone", false, false, false},
-		{"custom Skill location", true, false, true},
-		{"incomplete installed Skill", false, true, true},
+		{"custom Skill location", true, false, false},
+		{"incomplete installed Skill", false, true, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			root := t.TempDir()

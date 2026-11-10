@@ -63,18 +63,3 @@ func TestRemovedManagementCommands(t *testing.T) {
 		}
 	}
 }
-
-func TestSearchAcceptsQueryBeforeFlags(t *testing.T) {
-	t.Parallel()
-	reordered := floatFlagsFirst([]string{"review", "--source", "https://example.test", "--version", "tag:v1"})
-	want := []string{"--source", "https://example.test", "--version", "tag:v1", "review"}
-	if strings.Join(reordered, " ") != strings.Join(want, " ") {
-		t.Fatalf("got %#v", reordered)
-	}
-
-	equals := floatFlagsFirst([]string{"review", "--source=https://example.test"})
-	want = []string{"--source=https://example.test", "review"}
-	if strings.Join(equals, " ") != strings.Join(want, " ") {
-		t.Fatalf("got %#v", equals)
-	}
-}

@@ -1,0 +1,16 @@
+{
+  "title": "业务模型",
+  "path": "design/business-model/business-model.md",
+  "section_policy": "exact",
+  "sections": [
+    {
+      "heading": "业务实体"
+    },
+    {
+      "heading": "业务行为"
+    },
+    {
+      "heading": "业务流程"
+    }
+  ]
+}

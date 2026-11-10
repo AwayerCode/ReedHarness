@@ -6,6 +6,10 @@ version="${1:-$(git -C "$root" describe --tags --match 'v[0-9]*' --always --dirt
 dist="${DIST_DIR:-$root/dist}"
 mkdir -p "$dist"
 dist="$(cd "$dist" && pwd)"
+cli_version="${CLI_VERSION:-$version}"
+
+# A release holds only assets built by this run; stale packages never ship.
+rm -f "$dist"/reed_* "$dist"/swe-cli_* "$dist"/swe-* "$dist"/swe_* "$dist"/SHA256SUMS
 
 targets=(
   "linux/amd64"
@@ -36,13 +40,20 @@ for target in "${targets[@]}"; do
   assets+=("$asset")
 done
 
-# One ReedHarness release carries the installer and complete platform Skill packages.
+# A release carries separate installer, CLI and text Skill assets.
 package_stage="$(mktemp -d)"
 trap 'rm -rf "$package_stage"' EXIT
-DIST_DIR="$package_stage" "$root/../swe-cli/scripts/build-package.sh" "$version"
+DIST_DIR="$package_stage" "$root/../swe-cli/scripts/build-package.sh" "$cli_version"
 for target in "${targets[@]}"; do
-  package="swe_${target%/*}_${target#*/}.tar.gz"
+  package="swe-cli_${target%/*}_${target#*/}.tar.gz"
   cp "$package_stage/$package" "$dist/$package"
+  assets+=("$package")
+done
+
+for skill in "$package_stage"/swe-*.tar.gz; do
+  package="$(basename "$skill")"
+  [[ "$package" == swe-cli_* ]] && continue
+  cp "$skill" "$dist/$package"
   assets+=("$package")
 done
 
@@ -55,4 +66,4 @@ done
   fi
 )
 
-printf 'built ReedHarness %s in %s\n' "$version" "$dist"
+printf 'built ReedHarness %s (CLI %s) in %s\n' "$version" "$cli_version" "$dist"

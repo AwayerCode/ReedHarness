@@ -2,6 +2,7 @@ package checks
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -15,7 +16,7 @@ func TestGeneratedSchemasMatchSource(t *testing.T) {
 	if e := json.Unmarshal([]byte(SchemaJSON), &generated); e != nil {
 		t.Fatal(e)
 	}
-	files, e := filepath.Glob("../../../../skills/swe/references/artifact-schemas/*.json")
+	files, e := filepath.Glob("../../resources/artifact-schemas/*.json")
 	if e != nil || len(files) == 0 {
 		t.Fatal("missing canonical schemas", e)
 	}
@@ -38,12 +39,12 @@ func TestGeneratedSchemasMatchSource(t *testing.T) {
 }
 
 func TestArchitectureTemplate(t *testing.T) {
-	root := "../../../../skills/swe"
+	root := "../../../../skills/swe-system-design"
 	var schemas map[string]Schema
 	if e := json.Unmarshal([]byte(SchemaJSON), &schemas); e != nil {
 		t.Fatal(e)
 	}
-	b, e := os.ReadFile(filepath.Join(root, "system-design/assets/architecture-design.md"))
+	b, e := os.ReadFile(filepath.Join(root, "assets/architecture-design.md"))
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -92,115 +93,188 @@ func TestSkillLinksResolve(t *testing.T) {
 	}
 }
 
-func TestUnifiedSWERuntimeAndEntries(t *testing.T) {
-	root := "../../../../skills/swe"
-	entries, err := filepath.Glob(filepath.Join(root, "*", "SKILL.md"))
-	if err != nil || len(entries) != 6 {
-		t.Fatalf("expected five domains and adoption, got %v: %v", entries, err)
-	}
-	want := []string{"adoption", "business-model", "delivery", "implementation", "system-design", "testing"}
-	var got []string
-	for _, entry := range entries {
-		got = append(got, filepath.Base(filepath.Dir(entry)))
-	}
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("unexpected package entries: %v", got)
-	}
-	runtimes := []string{}
-	err = filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if entry.Name() == "runtime.json" {
-			runtimes = append(runtimes, path)
-		}
-		if entry.IsDir() && strings.HasPrefix(entry.Name(), "swe-") {
-			t.Errorf("obsolete domain directory: %s", path)
-		}
-		return nil
-	})
+// Each Skill must remain usable when no sibling Skill is installed.
+func TestIndependentSkillClosure(t *testing.T) {
+	entries, err := os.ReadDir("../../../../skills")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(runtimes) != 0 {
-		t.Fatalf("runtime bindings are generated only inside platform Skill packages, found in source: %v", runtimes)
+	var names []string
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		if _, err := os.Stat(filepath.Join("../../../../skills", entry.Name(), "SKILL.md")); err != nil {
+			continue
+		}
+		names = append(names, entry.Name())
 	}
-}
-
-func TestUnifiedSWEPackageClosure(t *testing.T) {
-	for _, domain := range []string{"business-model", "system-design", "implementation", "testing", "delivery"} {
-		t.Run(domain, func(t *testing.T) {
-			root := t.TempDir()
-			for _, name := range []string{"swe"} {
-				if err := os.CopyFS(filepath.Join(root, name), os.DirFS(filepath.Join("../../../../skills", name))); err != nil {
-					t.Fatal(err)
-				}
-			}
-			var contract struct {
-				Version int               `json:"schema_version"`
-				Shared  string            `json:"shared_resource"`
-				Inputs  []string          `json:"inputs"`
-				Outputs []string          `json:"outputs"`
-				Schemas map[string]string `json:"schemas"`
-			}
-			b, err := os.ReadFile(filepath.Join(root, "swe", domain, "contract.json"))
-			if err != nil {
+	if len(names) == 0 {
+		t.Fatal("no Skill entry found")
+	}
+	for _, name := range names {
+		t.Run(name, func(t *testing.T) {
+			root := filepath.Join(t.TempDir(), name)
+			if err := os.CopyFS(root, os.DirFS(filepath.Join("../../../../skills", name))); err != nil {
 				t.Fatal(err)
 			}
-			if err = json.Unmarshal(b, &contract); err != nil {
-				t.Fatal(err)
-			}
-			if contract.Version != 1 || contract.Shared != ".." {
-				t.Fatal("unsupported domain contract")
-			}
-			for _, kind := range append(contract.Inputs, contract.Outputs...) {
-				ref, ok := contract.Schemas[kind]
-				if !ok {
-					t.Fatalf("missing schema: %s", kind)
-				}
-				data, err := os.ReadFile(filepath.Join(root, "swe", domain, ref))
+			err := filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
 				if err != nil {
-					t.Fatal(err)
+					return err
 				}
-				if !json.Valid(data) {
-					t.Fatalf("invalid schema: %s", ref)
+				if entry.IsDir() {
+					return nil
 				}
-			}
-			seen := map[string]bool{}
-			var visit func(string)
-			visit = func(path string) {
-				path = filepath.Clean(path)
-				if seen[path] {
-					return
+				if entry.Name() == "runtime.json" || entry.Name() == "swe-cli" || entry.Name() == "swe-cli.exe" {
+					t.Errorf("CLI must be independently distributed: %s", path)
 				}
-				seen[path] = true
 				data, err := os.ReadFile(path)
 				if err != nil {
-					t.Error(err)
-					return
+					return err
+				}
+				if filepath.Ext(path) == ".json" && !json.Valid(data) {
+					t.Errorf("invalid JSON: %s", path)
+				}
+				if entry.Name() == "contract.json" {
+					if err := checkContract(path, root); err != nil {
+						t.Error(err)
+					}
+				}
+				if filepath.Ext(path) != ".md" {
+					return nil
+				}
+				for _, sibling := range names {
+					text := strings.NewReplacer("swe-system-design-v1", "CLI_PROTOCOL", "swe-system-design-batch-v1", "CLI_BATCH_PROTOCOL").Replace(string(data))
+					if sibling != name && strings.Contains(text, sibling) {
+						t.Errorf("%s knows sibling %s", path, sibling)
+					}
 				}
 				ignored := []string{}
 				for _, match := range linkRE.FindAllStringSubmatch(strings.Join(Visible(string(data), &ignored), "\n"), -1) {
 					u, err := url.Parse(strings.Trim(match[1], "<>"))
 					if err != nil {
-						t.Error(err)
-						continue
+						return err
 					}
 					if u.Scheme != "" || u.Host != "" || u.Path == "" {
 						continue
 					}
 					target := filepath.Join(filepath.Dir(path), filepath.FromSlash(u.Path))
-					if _, err := os.Stat(target); err != nil {
-						t.Errorf("%s: unavailable installed reference %s", path, match[1])
+					relative, err := filepath.Rel(root, target)
+					if err != nil {
+						return err
+					}
+					if relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+						t.Errorf("%s references outside own Skill: %s", path, match[1])
 						continue
 					}
-					if filepath.Ext(target) == ".md" {
-						visit(target)
+					if _, err := os.Stat(target); err != nil {
+						t.Errorf("%s: missing isolated resource %s", path, match[1])
 					}
 				}
+				return nil
+			})
+			if err != nil {
+				t.Fatal(err)
 			}
-			visit(filepath.Join(root, "swe", domain, "SKILL.md"))
-			visit(filepath.Join(root, "swe", "SKILL.md"))
 		})
+	}
+}
+
+// A Skill contract may only point at resources inside its own directory.
+func checkContract(name, root string) error {
+	data, e := os.ReadFile(name)
+	if e != nil {
+		return e
+	}
+	var contract struct {
+		Version int               `json:"schema_version"`
+		Inputs  []string          `json:"inputs"`
+		Outputs []string          `json:"outputs"`
+		Schemas map[string]string `json:"schemas"`
+	}
+	if e = json.Unmarshal(data, &contract); e != nil {
+		return e
+	}
+	if contract.Version != 1 {
+		return fmt.Errorf("%s: unsupported schema_version %d", name, contract.Version)
+	}
+	for _, kind := range append(append([]string{}, contract.Inputs...), contract.Outputs...) {
+		if _, ok := contract.Schemas[kind]; !ok {
+			return fmt.Errorf("%s: %s declares no schema", name, kind)
+		}
+	}
+	for kind, ref := range contract.Schemas {
+		target := filepath.Join(filepath.Dir(name), filepath.FromSlash(ref))
+		relative, e := filepath.Rel(root, target)
+		if e != nil {
+			return e
+		}
+		if relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+			return fmt.Errorf("%s: %s references outside own Skill: %s", name, kind, ref)
+		}
+		schema, e := os.ReadFile(target)
+		if e != nil {
+			return fmt.Errorf("%s: %s schema unavailable: %w", name, kind, e)
+		}
+		if !json.Valid(schema) {
+			return fmt.Errorf("%s: %s schema is not valid JSON", name, kind)
+		}
+	}
+	return nil
+}
+
+// Reference copies exist so a Skill stays readable on its own. They must not
+// drift from the CLI-owned machine schemas that actually enforce the format.
+func TestSkillSchemaCopiesMatchCLIResources(t *testing.T) {
+	copies, err := filepath.Glob("../../../../skills/*/references/artifact-schemas/*.json")
+	if err != nil || len(copies) == 0 {
+		t.Fatal("missing Skill schema copies", err)
+	}
+	yamlCopies, err := filepath.Glob("../../../../skills/*/references/system-design/schema.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, copyPath := range append(copies, yamlCopies...) {
+		relative, err := filepath.Rel(filepath.Join("..", "..", "..", "..", "skills"), copyPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		parts := strings.Split(filepath.ToSlash(relative), "/")
+		canonical := filepath.Join("..", "..", "resources", filepath.Join(parts[2:]...))
+		copyData, err := os.ReadFile(copyPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		canonicalData, err := os.ReadFile(canonical)
+		if err != nil {
+			t.Fatalf("%s: CLI resource unavailable: %v", copyPath, err)
+		}
+		if string(copyData) != string(canonicalData) {
+			t.Errorf("%s differs from %s; copy the CLI resource instead of editing the Skill copy", copyPath, canonical)
+		}
+	}
+}
+
+// docs/cli.md is the single CLI reference; Skill copies differ only in two links.
+func TestSkillCLIReferencesMatchDocs(t *testing.T) {
+	document, err := os.ReadFile("../../../../docs/cli.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := strings.NewReplacer(
+		"(../skills/swe-system-design/references/system-design/guide.md", "(system-design/guide.md",
+	).Replace(string(document))
+	copies, err := filepath.Glob("../../../../skills/*/references/cli.md")
+	if err != nil || len(copies) == 0 {
+		t.Fatal("missing Skill CLI references", err)
+	}
+	for _, copyPath := range copies {
+		data, err := os.ReadFile(copyPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(data) != want {
+			t.Errorf("%s differs from docs/cli.md; update the reference rather than the copy", copyPath)
+		}
 	}
 }

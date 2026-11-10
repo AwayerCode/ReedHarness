@@ -4,7 +4,7 @@ set -eu
 # Download, verify and run ReedHarness temporarily; leave only selected Skills in the project.
 #
 #   curl -fsSL https://raw.githubusercontent.com/AwayerCode/ReedHarness/main/install.sh | sh
-#   curl -fsSL .../install.sh | sh -s -- --version <release> --root ./my-project -- search
+#   curl -fsSL .../install.sh | sh -s -- --version <release> --root ./my-project -- list
 
 repo="AwayerCode/ReedHarness"
 version="${REED_VERSION:-}"
@@ -16,7 +16,7 @@ Usage: install.sh [--version <reed-release>] [--root <dir>] -- [reed command and
 
   --version <tag>  Select the reed release (default: latest release)
   --root <dir>     Working directory for the command (default: current directory)
-  --              Pass the remaining arguments to reed (default command: search)
+  --              Pass the remaining arguments to reed (default command: list)
 
 The executable is removed after the command; no global or project installation.
 EOF
@@ -103,6 +103,6 @@ fi
 
 chmod +x "$tmp/$asset"
 if [ "$#" -eq 0 ]; then
-  set -- search
+  set -- list
 fi
 "$tmp/$asset" "$@"

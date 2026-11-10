@@ -1,4 +1,4 @@
-import { mkdir, cp, writeFile, readFile, mkdtemp, rm, rename } from "node:fs/promises";
+import { mkdir, cp, writeFile, readFile, mkdtemp, rm, rename, readdir, unlink } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -11,14 +11,28 @@ const staging = await mkdtemp(join(dist, ".plugin-build-"));
 const packages = join(staging, "packages");
 const platforms = ["darwin_amd64", "darwin_arm64", "linux_amd64", "linux_arm64", "windows_amd64", "windows_arm64"];
 const optionalDependencies = {};
+// Bundled Skills follow the repository directory layout; no registry is parsed.
+const skillNames = (await readdir(join(root, "skills"), { withFileTypes: true }))
+  .filter(entry => entry.isDirectory())
+  .map(entry => entry.name)
+  .sort();
+async function addCLIInstructions(target) {
+  for (const name of skillNames) {
+    const entry = join(target, "skills", name, "SKILL.md");
+    const content = await readFile(entry, "utf8");
+    await writeFile(entry, content + "\n## 插件宿主 CLI 定位\n\n本插件附带独立 CLI。将当前 Skill 目录下 `../../tools/swe-cli/bin` 的绝对路径加入命令环境 PATH 后执行 `swe-cli`；也可直接执行该目录中的 `swe-cli`（Windows 为 `swe-cli.exe`）。保留工具目录相邻的 `runtime.json`。\n");
+  }
+}
 try {
 for (const platform of platforms) {
   const target = join(packages, platform);
   await mkdir(target, { recursive: true });
   await cp(join(root, "plugins/dsh"), target, { recursive: true });
-  execFileSync("tar", ["-xzf", join(dist, `swe_${platform}.tar.gz`), "-C", target]);
-  const runtime = JSON.parse(await readFile(join(target, "skills/swe/runtime.json"), "utf8"));
-  if (runtime.version !== version) throw new Error(`SWE ${platform} runtime version does not match ${version}; rebuild the Skill packages`);
+  await mkdir(join(target, "tools"), { recursive: true });
+  execFileSync("tar", ["-xzf", join(dist, `swe-cli_${platform}.tar.gz`), "-C", join(target, "tools")]);
+  for (const name of skillNames) execFileSync("tar", ["-xzf", join(dist, `${name}.tar.gz`), "-C", target]);
+  await addCLIInstructions(target);
+
   const manifest = { name: "reed", version, description: "SWE engineering skills and architecture tools", skills: "./skills/" };
   for (const host of ["codex", "claude"]) {
     await mkdir(join(target, `.${host}-plugin`), { recursive: true });
@@ -35,20 +49,28 @@ for (const platform of platforms) {
   const native = join(packages, name);
   await mkdir(native, { recursive: true });
   const binary = platform.startsWith("windows") ? "swe-cli.exe" : "swe-cli";
-  await cp(join(target, "skills/swe/bin", binary), join(native, binary));
-  await cp(join(target, "skills/swe/runtime.json"), join(native, "runtime.json"));
+  await cp(join(target, "tools/swe-cli/bin", binary), join(native, binary));
+  await cp(join(target, "tools/swe-cli/runtime.json"), join(native, "runtime.json"));
   await writeFile(join(native, "package.json"), JSON.stringify({ name, version, os: pkg.os, cpu: pkg.cpu, files: [binary, "runtime.json"] }, null, 2) + "\n");
 }
 const npmRoot = join(packages, "dsh-reed");
 await mkdir(npmRoot, { recursive: true });
 await cp(join(root, "plugins/dsh"), npmRoot, { recursive: true });
-await cp(join(root, "skills/swe"), join(npmRoot, "skills/swe"), { recursive: true });
+for (const name of skillNames) {
+  const sourceRoot = join(root, "skills", name);
+  await cp(sourceRoot, join(npmRoot, "skills", name), { recursive: true, filter: source => source !== join(sourceRoot, "bin") && source !== join(sourceRoot, "runtime.json") });
+}
+await addCLIInstructions(npmRoot);
 const npmPackage = JSON.parse(await readFile(join(npmRoot, "package.json"), "utf8"));
 npmPackage.version = version;
 npmPackage.optionalDependencies = optionalDependencies;
 npmPackage.scripts = { postinstall: "node install.mjs" };
 await writeFile(join(npmRoot, "package.json"), JSON.stringify(npmPackage, null, 2) + "\n");
 await mkdir(join(dist, "plugins"), { recursive: true });
+// Renamed or stale plugin archives never ship next to this build.
+for (const file of await readdir(dist)) {
+  if (/-plugin_.*\.tar\.gz$/.test(file)) await unlink(join(dist, file));
+}
 const destination = join(dist, "plugins", version);
 const previous = join(staging, "previous");
 let hadPrevious = false;

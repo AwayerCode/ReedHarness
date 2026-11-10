@@ -1,3 +1,0 @@
-interface:
-  display_name: "测试"
-  short_description: "依据业务、架构和风险设计、编写、执行或审查单元、集成与端到端测试，统一维护测试产物，不修改生产代码或设计预期。"

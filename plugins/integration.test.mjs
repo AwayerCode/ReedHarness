@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { spawn, execFileSync } from "node:child_process";
 import { createServer } from "node:http";
 import { createHash } from "node:crypto";
-import { readFile, cp, mkdtemp, writeFile, rm, access } from "node:fs/promises";
+import { readFile, cp, mkdtemp, writeFile, rm, access, readdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -19,7 +19,7 @@ test("packaged service, DSH proxy, reload and disposal", async () => {
   try {
     await cp("apps/swe-cli/internal/systemdesign/testdata/project", join(root, "first"), { recursive: true });
     await cp("apps/swe-cli/internal/systemdesign/testdata/project", join(root, "second"), { recursive: true });
-    service = spawn(join(bundle, "skills/swe/bin", process.platform === "win32" ? "swe-cli.exe" : "swe-cli"), ["system-design", "serve", "--root", root, "--expect-version", version]);
+    service = spawn(join(bundle, "tools/swe-cli/bin", process.platform === "win32" ? "swe-cli.exe" : "swe-cli"), ["system-design", "serve", "--root", root, "--expect-version", version]);
     await new Promise((done, reject) => {
       const timer = setTimeout(() => reject(new Error("startup timeout")), 10000);
       service.once("error", error => { clearTimeout(timer); reject(error); });
@@ -31,15 +31,29 @@ test("packaged service, DSH proxy, reload and disposal", async () => {
     });
     const { apply } = await import(pathToFileURL(join(bundle, "lib/index.js")));
     const routes = new Map();
-    let skill;
+    const skills = new Map();
     let dispose;
     apply({
       effect(callback) { dispose = callback(); },
-      skills: { register(value) { skill = value; return () => { skill = undefined; }; } },
+      skills: { register(value) { skills.set(value.name, value); return () => skills.delete(value.name); } },
       webServer: { register(route) { assert.equal(route.kind, "exact"); routes.set(route.path, route.handler); return () => routes.delete(route.path); } },
     }, { root });
-    assert.equal(skill.name, "swe");
-    assert.equal(skill.resourceBase.path, join(bundle, "skills/swe"));
+    const bundled = (await readdir(join(bundle, "skills"))).sort();
+    assert.deepEqual([...skills.keys()].sort(), bundled);
+    assert.ok(bundled.length > 0);
+    for (const name of bundled) {
+      assert.equal(skills.get(name).resourceBase.path, join(bundle, "skills", name));
+      assert.equal(skills.get(name).path, join(bundle, "skills", name, "SKILL.md"));
+      assert.ok(skills.get(name).content.includes(join(bundle, "tools/swe-cli/bin")));
+    }
+    for (const host of ["codex", "claude"]) {
+      const manifest = JSON.parse(await readFile(join(bundle, `.${host}-plugin/plugin.json`), "utf8"));
+      assert.equal(manifest.skills, "./skills/");
+      for (const name of bundled) {
+        const entry = await readFile(join(bundle, manifest.skills, name, "SKILL.md"), "utf8");
+        assert.match(entry, /\.\.\/\.\.\/tools\/swe-cli\/bin/);
+      }
+    }
     proxy = createServer((request, response) => {
       const handler = routes.get(new URL(request.url, "http://localhost").pathname);
       if (handler) handler(request, response); else { response.writeHead(404); response.end(); }
@@ -72,7 +86,7 @@ test("packaged service, DSH proxy, reload and disposal", async () => {
     assert.equal((await fetch(origin + "/reed/view?project=.." )).status, 403);
     dispose();
     assert.equal(routes.size, 0);
-    assert.equal(skill, undefined);
+    assert.equal(skills.size, 0);
     assert.equal((await fetch("http://127.0.0.1:47831/reed/health")).status, 200);
   } finally {
     if (proxy) await new Promise(done => proxy.close(done));
@@ -125,7 +139,7 @@ test("DSH view uses the server-resolved URL for an aliased session directory", a
   cleanup();
 });
 
-test("npm platform install binds matching Skill runtime and rejects tampering", async () => {
+test("npm platform install binds independent CLI runtime and rejects tampering", async () => {
   const os = process.platform === "win32" ? "windows" : process.platform;
   const arch = process.arch === "x64" ? "amd64" : process.arch;
   const name = `dsh-reed-${os}-${arch}`;
@@ -135,9 +149,15 @@ test("npm platform install binds matching Skill runtime and rejects tampering", 
   try {
     await cp(join(packages, "dsh-reed"), temporary, { recursive: true });
     await cp(join(packages, name), join(temporary, "node_modules", name), { recursive: true });
+    const installed = await readdir(join(temporary, "skills"));
+    assert.ok(installed.length > 0);
+    for (const skill of installed) await access(join(temporary, "skills", skill, "SKILL.md"));
+    const manifest = JSON.parse(await readFile(join(temporary, "package.json"), "utf8"));
+    manifest.version = "99.0.0"; // Plugin/Skill versions do not bind the CLI version.
+    await writeFile(join(temporary, "package.json"), JSON.stringify(manifest));
     execFileSync(process.execPath, [join(temporary, "install.mjs")]);
     const binary = os === "windows" ? "swe-cli.exe" : "swe-cli";
-    assert.deepEqual(await readFile(join(temporary, "skills/swe/bin", binary)), await readFile(join(packages, name, binary)));
+    assert.deepEqual(await readFile(join(temporary, "tools/swe-cli/bin", binary)), await readFile(join(packages, name, binary)));
     await writeFile(join(temporary, "node_modules", name, binary), "tampered");
     assert.throws(() => execFileSync(process.execPath, [join(temporary, "install.mjs")], { stdio: "pipe" }), /checksum mismatch/);
   } finally { await rm(temporary, { recursive: true, force: true }); }
@@ -171,11 +191,11 @@ test("plugin starts its service and releases the port for an upgraded plugin", a
     await cp(bundle, upgraded, { recursive: true });
     const nextVersion = version + "-upgrade-test";
     const executable = process.platform === "win32" ? "swe-cli.exe" : "swe-cli";
-    execFileSync("go", ["build", "-ldflags", `-X github.com/AwayerCode/ReedHarness/apps/swe-cli/internal/app.Version=${nextVersion}`, "-o", join(upgraded, "skills/swe/bin", executable), "."], { cwd: resolve("apps/swe-cli") });
-    const runtime = JSON.parse(await readFile(join(upgraded, "skills/swe/runtime.json"), "utf8"));
+    execFileSync("go", ["build", "-ldflags", `-X github.com/AwayerCode/ReedHarness/apps/swe-cli/internal/app.Version=${nextVersion}`, "-o", join(upgraded, "tools/swe-cli/bin", executable), "."], { cwd: resolve("apps/swe-cli") });
+    const runtime = JSON.parse(await readFile(join(upgraded, "tools/swe-cli/runtime.json"), "utf8"));
     runtime.version = nextVersion;
-    runtime.assets[platform.replace("_", "/")].sha256 = createHash("sha256").update(await readFile(join(upgraded, "skills/swe/bin", executable))).digest("hex");
-    await writeFile(join(upgraded, "skills/swe/runtime.json"), JSON.stringify(runtime));
+    runtime.assets[platform.replace("_", "/")].sha256 = createHash("sha256").update(await readFile(join(upgraded, "tools/swe-cli/bin", executable))).digest("hex");
+    await writeFile(join(upgraded, "tools/swe-cli/runtime.json"), JSON.stringify(runtime));
     const mount = async directory => {
       const { apply } = await import(pathToFileURL(join(directory, "lib/index.js")));
       apply({ effect(callback) { dispose = callback(); }, skills: { register() { return () => {}; } }, webServer: {
@@ -209,7 +229,7 @@ test("plugin starts its service and releases the port for an upgraded plugin", a
 test("rebuilding a version removes stale files from packages and archives", async () => {
   const version = process.env.REED_TEST_VERSION || "0.1.0";
   const root = resolve(`apps/swe-cli/dist/plugins/${version}`);
-  const stale = ["darwin_arm64/skills/swe/removed.md", "dsh-reed/skills/swe/removed.md", "dsh-reed-darwin-arm64/removed.txt"];
+  const stale = ["darwin_arm64/skills/swe-testing/removed.md", "dsh-reed/skills/swe-testing/removed.md", "dsh-reed-darwin-arm64/removed.txt"];
   for (const file of stale) await writeFile(join(root, file), "removed source");
   execFileSync(process.execPath, ["plugins/package.mjs", version]);
   for (const file of stale) await assert.rejects(access(join(root, file)), { code: "ENOENT" });

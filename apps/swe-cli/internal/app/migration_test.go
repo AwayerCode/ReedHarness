@@ -51,7 +51,7 @@ func TestMigrationCases(t *testing.T) {
 func TestArtifactsExplicitScenarios(t *testing.T) {
 	root, _ := fixture(t)
 	// Build a conforming test-design document, with explicit risk/scenario relations.
-	data, e := os.ReadFile(filepath.Join(repository(t), "skills/swe/references/artifact-schemas/test-design.json"))
+	data, e := os.ReadFile(filepath.Join(repository(t), "apps/swe-cli/resources/artifact-schemas/test-design.json"))
 	if e != nil {
 		t.Fatal(e)
 	}
