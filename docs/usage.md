@@ -4,7 +4,7 @@ Skill 是交付单元，方法、资源和配套 CLI 一起安装到 `.agents/sk
 
 ## 安装分发工具
 
-当前源码的新分发行为尚未随旧版 `v0.2.2` 发布。验证当前实现时，在本仓根目录构建到项目外临时目录：
+当前发行版是 `v0.3.0`，已包含本文的分发行为。也可以在本仓根目录构建到项目外临时目录：
 
 ```bash
 go build -C apps/reed -o /tmp/reed .
@@ -13,7 +13,7 @@ go build -C apps/reed -o /tmp/reed .
 
 以下命令在目标业务项目根目录执行，使用这个临时二进制。Windows 可构建或下载对应平台的 `reed.exe`，放在项目外临时目录；下载发行物时用同页 `SHA256SUMS` 校验。旧发行版仍有旧安装行为，不能用它验证本文新布局。
 
-`install.sh` 现在是临时启动器：下载并校验 reed，执行 `--` 后的命令，退出后删除临时二进制。无命令时执行 `search`；`--version` 在分隔符之前选择 reed 发行版，在分隔符之后属于 reed 命令。新版本发布后可这样使用：
+`install.sh` 是临时启动器：下载并校验 reed，执行 `--` 后的命令，退出后删除临时二进制。无命令时执行 `search`；`--version` 在分隔符之前选择 reed 发行版，在分隔符之后属于 reed 命令。例如：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/AwayerCode/ReedHarness/main/install.sh | sh -s -- -- search
@@ -32,10 +32,10 @@ go build -C apps/reed -o "$env:TEMP/reed.exe" .
 
 ## 安装 Skill
 
-SWE 使用包含 CLI 的平台 Skill 包。以下示例的 `vX.Y.Z` 需替换为实际 ReedHarness 发行标签，平台名按本机选择；新打包方式尚未发布：
+SWE 使用包含 CLI 的平台 Skill 包。以下示例使用当前发行标签 `v0.3.0`，平台名按本机选择：
 
 ```bash
-/tmp/reed install --source https://github.com/AwayerCode/ReedHarness/releases/download/vX.Y.Z/swe_darwin_arm64.tar.gz --version tag:vX.Y.Z --path skills/swe
+/tmp/reed install --source https://github.com/AwayerCode/ReedHarness/releases/download/v0.3.0/swe_darwin_arm64.tar.gz --version tag:v0.3.0 --path skills/swe
 ```
 
 无需 CLI 的 Skill 仍可从仓库标签或 commit 安装。SWE 源码目录不包含构建产物，直接安装源码归档不会自动获得 CLI；应选择完整平台包。

@@ -78,23 +78,25 @@ modules:
 
 ## 快速开始
 
-当前源码包含新的分发方式与 YAML 架构检查，旧版 `v0.2.2` 不能用于验证本文流程。快速开始使用本地构建的完整 SWE 包，在临时项目中体验，不依赖尚未发布的远端包。需要 Go 1.24+、Bash 和 tar；命令适用于 macOS / Linux。
+当前发行版是 `v0.3.0`，包含与本文一致的分发方式与 YAML 架构检查。下面在临时项目中用官方 SWE 包体验一次检查；需要 Bash、curl 和 tar，命令适用于 macOS / Linux。Windows 用法见[使用指南](docs/usage.md)。
 
 ### 准备 SWE
 
-在本仓库根目录执行，构建六平台完整 Skill 包并选择本机平台：
+按本机平台下载发行包（将 `darwin_arm64` 换成 `darwin_amd64`、`linux_amd64` 或 `linux_arm64`），用同页 `SHA256SUMS` 校验后再解压到临时项目：
 
 ```bash
-apps/swe-cli/scripts/build-package.sh
-reed_package="$PWD/apps/swe-cli/dist/swe_$(go env GOOS)_$(go env GOARCH).tar.gz"
+base="https://github.com/AwayerCode/ReedHarness/releases/download/v0.3.0"
+asset="swe_darwin_arm64.tar.gz"
+curl -fsSL "$base/$asset" -o /tmp/"$asset"
+curl -fsSL "$base/SHA256SUMS" -o /tmp/SHA256SUMS
 reed_demo="$(mktemp -d)"
 mkdir -p "$reed_demo/.agents"
-tar -xzf "$reed_package" -C "$reed_demo/.agents"
+tar -xzf /tmp/"$asset" -C "$reed_demo/.agents"
 cd "$reed_demo"
 .agents/skills/swe/bin/swe-cli version
 ```
 
-包内已经包含 Skill、平台二进制和版本摘要清单。这里只把选择的 SWE 包解压到新项目，不复制整个 ReedHarness 仓库，也不需要全局安装。
+包内已经包含 Skill、平台二进制和版本摘要清单。这里只把选择的 SWE 包解压到新项目，不复制整个 ReedHarness 仓库，也不需要全局安装。从源码构建时，在仓库根目录执行 `apps/swe-cli/scripts/build-package.sh v0.3.0`，再使用 `apps/swe-cli/dist/` 中对应平台的包。
 
 ### 完成一次检查
 
