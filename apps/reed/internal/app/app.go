@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/AwayerCode/Harn/apps/harn/internal/installer"
+	"github.com/AwayerCode/ReedHarness/apps/reed/internal/installer"
 )
 
 type Options struct {
@@ -71,16 +71,16 @@ func (r *Runner) Run(ctx context.Context, args []string) int {
 		return r.search(ctx, args[1:])
 	case "version":
 		if len(args) != 1 {
-			fmt.Fprintln(r.stderr, "harn: version does not accept arguments")
+			fmt.Fprintln(r.stderr, "reed: version does not accept arguments")
 			return 2
 		}
-		fmt.Fprintf(r.stdout, "harn %s\n", r.version)
+		fmt.Fprintf(r.stdout, "reed %s\n", r.version)
 		return 0
 	case "help", "-h", "--help":
 		r.printUsage(r.stdout)
 		return 0
 	default:
-		fmt.Fprintf(r.stderr, "harn: unknown command %q\n\n", args[0])
+		fmt.Fprintf(r.stderr, "reed: unknown command %q\n\n", args[0])
 		r.printUsage(r.stderr)
 		return 2
 	}
@@ -95,7 +95,7 @@ func (r *Runner) install(ctx context.Context, args []string) int {
 	var root string
 	var dryRun bool
 	flags.Var(&paths, "path", "repository-relative Skill directory (repeatable)")
-	flags.StringVar(&rawSource, "source", "", "Harn repository or direct .tar.gz URL")
+	flags.StringVar(&rawSource, "source", "", "ReedHarness repository or direct .tar.gz URL")
 	flags.StringVar(&version, "version", "", "branch:<name>, tag:<name>, or commit:<sha>")
 	flags.StringVar(&root, "root", "", "project root (default: current directory)")
 	flags.BoolVar(&dryRun, "dry-run", false, "resolve and verify the download without writing files")
@@ -107,11 +107,11 @@ func (r *Runner) install(ctx context.Context, args []string) int {
 		return 2
 	}
 	if flags.NArg() != 0 {
-		fmt.Fprintf(r.stderr, "harn: unexpected argument %q\n", flags.Arg(0))
+		fmt.Fprintf(r.stderr, "reed: unexpected argument %q\n", flags.Arg(0))
 		return 2
 	}
 	if rawSource == "" || version == "" || len(paths) == 0 {
-		fmt.Fprintln(r.stderr, "harn: install requires --source, --version, and at least one --path")
+		fmt.Fprintln(r.stderr, "reed: install requires --source, --version, and at least one --path")
 		return 2
 	}
 
@@ -149,7 +149,7 @@ func (r *Runner) list(args []string) int {
 		return 2
 	}
 	if flags.NArg() != 0 {
-		fmt.Fprintf(r.stderr, "harn: unexpected argument %q\n", flags.Arg(0))
+		fmt.Fprintf(r.stderr, "reed: unexpected argument %q\n", flags.Arg(0))
 		return 2
 	}
 	projectRoot, err := resolveRoot(root)
@@ -178,7 +178,7 @@ func (r *Runner) search(ctx context.Context, args []string) int {
 	flags.SetOutput(r.stderr)
 	var rawSource string
 	var version string
-	flags.StringVar(&rawSource, "source", "https://github.com/AwayerCode/Harn", "Harn repository URL")
+	flags.StringVar(&rawSource, "source", "https://github.com/AwayerCode/ReedHarness", "ReedHarness repository URL")
 	flags.StringVar(&version, "version", "", "branch:<name>, tag:<name>, or commit:<sha> (default: branch:main)")
 	flags.Usage = func() { r.printSearchUsage(flags.Output()) }
 	if err := flags.Parse(floatFlagsFirst(args)); err != nil {
@@ -188,7 +188,7 @@ func (r *Runner) search(ctx context.Context, args []string) int {
 		return 2
 	}
 	if flags.NArg() > 1 {
-		fmt.Fprintf(r.stderr, "harn: unexpected argument %q\n", flags.Arg(1))
+		fmt.Fprintf(r.stderr, "reed: unexpected argument %q\n", flags.Arg(1))
 		return 2
 	}
 	query := ""
@@ -213,30 +213,30 @@ func (r *Runner) search(ctx context.Context, args []string) int {
 }
 
 func (r *Runner) printError(err error) {
-	fmt.Fprintf(r.stderr, "harn: %v\n", err)
+	fmt.Fprintf(r.stderr, "reed: %v\n", err)
 }
 
 func (r *Runner) printUsage(writer io.Writer) {
-	fmt.Fprintln(writer, "Usage: harn <command> [options]")
+	fmt.Fprintln(writer, "Usage: reed <command> [options]")
 	fmt.Fprintln(writer)
 	fmt.Fprintln(writer, "Commands:")
 	fmt.Fprintln(writer, "  install   Install selected Skills and their companion CLI")
 	fmt.Fprintln(writer, "  list      List Skills found in .agents/skills/")
 	fmt.Fprintln(writer, "  search    Search available skills from index.json")
-	fmt.Fprintln(writer, "  version   Print the Harn version")
+	fmt.Fprintln(writer, "  version   Print the ReedHarness version")
 	fmt.Fprintln(writer, "\nSkills and companion CLIs install to .agents/skills/. No project records or locks.")
 }
 
 func (r *Runner) printInstallUsage(writer io.Writer) {
-	fmt.Fprintln(writer, "Usage: harn install --source <url> --version <ref> --path <path> [--path <path>...] [--dry-run] [--root <dir>]")
+	fmt.Fprintln(writer, "Usage: reed install --source <url> --version <ref> --path <path> [--path <path>...] [--dry-run] [--root <dir>]")
 }
 
 func (r *Runner) printListUsage(writer io.Writer) {
-	fmt.Fprintln(writer, "Usage: harn list [--root <dir>]")
+	fmt.Fprintln(writer, "Usage: reed list [--root <dir>]")
 }
 
 func (r *Runner) printSearchUsage(writer io.Writer) {
-	fmt.Fprintln(writer, "Usage: harn search [--source <url>] [--version <ref>] [query]")
+	fmt.Fprintln(writer, "Usage: reed search [--source <url>] [--version <ref>] [query]")
 }
 
 // flag.Parse stops at the first positional argument, so move a leading query

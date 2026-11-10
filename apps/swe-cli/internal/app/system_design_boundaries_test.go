@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/AwayerCode/Harn/apps/swe-cli/internal/systemdesign"
+	"github.com/AwayerCode/ReedHarness/apps/swe-cli/internal/systemdesign"
 )
 
 func assertDesignBatchMatchesSingles(t *testing.T, mode, root string, wantCode int) designBatch {

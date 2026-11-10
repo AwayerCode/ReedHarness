@@ -3,7 +3,7 @@ package app
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/AwayerCode/Harn/apps/swe-cli/internal/workspace"
+	"github.com/AwayerCode/ReedHarness/apps/swe-cli/internal/workspace"
 	"os"
 	"path/filepath"
 	"strings"

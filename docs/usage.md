@@ -1,61 +1,61 @@
 # 使用指南
 
-Skill 是交付单元，方法、资源和配套 CLI 一起安装到 `.agents/skills/<名称>/`。harn 只负责查找与分发，不常驻业务项目，不保存下载记录或项目锁，不依赖全局安装。
+Skill 是交付单元，方法、资源和配套 CLI 一起安装到 `.agents/skills/<名称>/`。reed 只负责查找与分发，不常驻业务项目，不保存下载记录或项目锁，不依赖全局安装。
 
 ## 安装分发工具
 
 当前源码的新分发行为尚未随旧版 `v0.2.2` 发布。验证当前实现时，在本仓根目录构建到项目外临时目录：
 
 ```bash
-go build -C apps/harn -o /tmp/harn .
-/tmp/harn version
+go build -C apps/reed -o /tmp/reed .
+/tmp/reed version
 ```
 
-以下命令在目标业务项目根目录执行，使用这个临时二进制。Windows 可构建或下载对应平台的 `harn.exe`，放在项目外临时目录；下载发行物时用同页 `SHA256SUMS` 校验。旧发行版仍有旧安装行为，不能用它验证本文新布局。
+以下命令在目标业务项目根目录执行，使用这个临时二进制。Windows 可构建或下载对应平台的 `reed.exe`，放在项目外临时目录；下载发行物时用同页 `SHA256SUMS` 校验。旧发行版仍有旧安装行为，不能用它验证本文新布局。
 
-`install.sh` 现在是临时启动器：下载并校验 harn，执行 `--` 后的命令，退出后删除临时二进制。无命令时执行 `search`；`--version` 在分隔符之前选择 harn 发行版，在分隔符之后属于 harn 命令。新版本发布后可这样使用：
+`install.sh` 现在是临时启动器：下载并校验 reed，执行 `--` 后的命令，退出后删除临时二进制。无命令时执行 `search`；`--version` 在分隔符之前选择 reed 发行版，在分隔符之后属于 reed 命令。新版本发布后可这样使用：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/AwayerCode/Harn/main/install.sh | sh -s -- -- search
+curl -fsSL https://raw.githubusercontent.com/AwayerCode/ReedHarness/main/install.sh | sh -s -- -- search
 ```
 
-启动器不安装 harn 到业务项目，也不自动安装 Skill。
+启动器不安装 reed 到业务项目，也不自动安装 Skill。
 
 Windows 在本仓根目录可用 PowerShell 构建临时分发工具：
 
 ```powershell
-go build -C apps/harn -o "$env:TEMP/harn.exe" .
-& "$env:TEMP/harn.exe" version
+go build -C apps/reed -o "$env:TEMP/reed.exe" .
+& "$env:TEMP/reed.exe" version
 ```
 
-后续将 `/tmp/harn` 替换为 `& "$env:TEMP/harn.exe"`，选择 `swe_windows_amd64.tar.gz` 或 `swe_windows_arm64.tar.gz`。包内检查器为 `.agents/skills/swe/bin/swe-cli.exe`。
+后续将 `/tmp/reed` 替换为 `& "$env:TEMP/reed.exe"`，选择 `swe_windows_amd64.tar.gz` 或 `swe_windows_arm64.tar.gz`。包内检查器为 `.agents/skills/swe/bin/swe-cli.exe`。
 
 ## 安装 Skill
 
-SWE 使用包含 CLI 的平台 Skill 包。以下示例的 `vX.Y.Z` 需替换为实际 Harn 发行标签，平台名按本机选择；新打包方式尚未发布：
+SWE 使用包含 CLI 的平台 Skill 包。以下示例的 `vX.Y.Z` 需替换为实际 ReedHarness 发行标签，平台名按本机选择；新打包方式尚未发布：
 
 ```bash
-/tmp/harn install --source https://github.com/AwayerCode/Harn/releases/download/vX.Y.Z/swe_darwin_arm64.tar.gz --version tag:vX.Y.Z --path skills/swe
+/tmp/reed install --source https://github.com/AwayerCode/ReedHarness/releases/download/vX.Y.Z/swe_darwin_arm64.tar.gz --version tag:vX.Y.Z --path skills/swe
 ```
 
 无需 CLI 的 Skill 仍可从仓库标签或 commit 安装。SWE 源码目录不包含构建产物，直接安装源码归档不会自动获得 CLI；应选择完整平台包。
-安装接受自有路径 `skills/<名称>` 和第三方路径 `skills/3rdparty/<名称>`，两者都映射到 `.agents/skills/<名称>/`。新版 Harn 也会按统一索引将旧的 `skills/<第三方名称>` 解析到新目录，原有安装命令无需更改；没有索引的历史归档仍按原路径安装。`Skills/<名称>` 保留历史直接路径支持，不能直接安装分组目录 `skills/3rdparty`。入口必须是具有名称与简介的 `SKILL.md`，名称须与目录一致；不再分发普通文件或整个仓库。可重复 `--path` 选择多个 Skill。
+安装接受自有路径 `skills/<名称>` 和第三方路径 `skills/3rdparty/<名称>`，两者都映射到 `.agents/skills/<名称>/`。新版 ReedHarness 也会按统一索引将旧的 `skills/<第三方名称>` 解析到新目录，原有安装命令无需更改；没有索引的历史归档仍按原路径安装。`Skills/<名称>` 保留历史直接路径支持，不能直接安装分组目录 `skills/3rdparty`。入口必须是具有名称与简介的 `SKILL.md`，名称须与目录一致；不再分发普通文件或整个仓库。可重复 `--path` 选择多个 Skill。
 
 例如安装第三方 Skill（`<固定SHA>` 替换为包含新目录的仓库提交）：
 
 ```bash
-/tmp/harn install --source https://github.com/AwayerCode/Harn --version commit:<固定SHA> --path skills/3rdparty/diagram-design
+/tmp/reed install --source https://github.com/AwayerCode/ReedHarness --version commit:<固定SHA> --path skills/3rdparty/diagram-design
 ```
 
-旧参数 `--path skills/diagram-design` 在新版 Harn 中得到相同安装结果。新旧别名不能在同一命令重复选择，避免同名目标冲突。第三方来源与本仓路径由统一的 `skills/index.json` 登记；安装仍以明确的仓库标签或 commit 为准。迁移后的仓库需使用新版 Harn，不能保证旧二进制理解新目录。
+旧参数 `--path skills/diagram-design` 在新版 ReedHarness 中得到相同安装结果。新旧别名不能在同一命令重复选择，避免同名目标冲突。第三方来源与本仓路径由统一的 `skills/index.json` 登记；安装仍以明确的仓库标签或 commit 为准。迁移后的仓库需使用新版 ReedHarness，不能保证旧二进制理解新目录。
 
-harn 只下载所选 Skill 归档，将包内文件原样安装，不解释 `runtime.json` 或额外下载 CLI。SWE 包已经包含本平台 `bin/swe-cli` 和打包生成的本地摘要清单；CLI 启动时核对自身版本和摘要。安装前可用发行页 `SHA256SUMS` 验证整个包，选择正确平台。版本支持 `tag:<标签>`、`commit:<SHA>` 和 `branch:<分支>`；需要可复现安装时使用固定标签或 commit。
+reed 只下载所选 Skill 归档，将包内文件原样安装，不解释 `runtime.json` 或额外下载 CLI。SWE 包已经包含本平台 `bin/swe-cli` 和打包生成的本地摘要清单；CLI 启动时核对自身版本和摘要。安装前可用发行页 `SHA256SUMS` 验证整个包，选择正确平台。版本支持 `tag:<标签>`、`commit:<SHA>` 和 `branch:<分支>`；需要可复现安装时使用固定标签或 commit。
 
 `--dry-run` 会下载、检查 Skill 包结构，但不写业务项目。来源支持 GitHub 仓库 URL 或直接 `.tar.gz` URL；归档需包含所选 Skill 目录。存在索引时，用同一次下载中的索引解析路径，索引非法则拒绝安装；不跨两次分支下载混用索引与内容。下载上限为 128 MiB，整个解压流（含未选中内容、元数据与尾部填充）上限为 512 MiB，归档条目最多 100000 个；选中文件单个最多 32 MiB。安装前会完整读取 gzip 流并校验尾部，损坏或超限的包不会进入项目安装阶段。
 
 ## 项目接入
 
-支持 `.agents/skills/` 的 Agent 可原生发现入口，无需追加 `AGENTS.md`。其他宿主可显式读取 `.agents/skills/swe/SKILL.md`。harn 不改写项目指令，发现后的刷新和启用方式遵循宿主规则。
+支持 `.agents/skills/` 的 Agent 可原生发现入口，无需追加 `AGENTS.md`。其他宿主可显式读取 `.agents/skills/swe/SKILL.md`。reed 不改写项目指令，发现后的刷新和启用方式遵循宿主规则。
 
 任务指令示例：
 
@@ -87,8 +87,8 @@ git add .agents/skills/swe
 ## 查找与查看
 
 ```bash
-/tmp/harn search
-/tmp/harn list
+/tmp/reed search
+/tmp/reed list
 ```
 
 `search` 从所选来源的 `skills/index.json` 按名称、路径和简介查找，默认主分支；可加 `--version` 指定含登记表的修订。没有登记表时会报错，不回退扫描旧仓库。
@@ -97,7 +97,7 @@ git add .agents/skills/swe
 
 ## 换版与移除
 
-harn 不再提供 `update`、`status`、`remove`。没有持久记录，就不声称能识别上游文件、本地新增文件或本地修改。
+reed 不再提供 `update`、`status`、`remove`。没有持久记录，就不声称能识别上游文件、本地新增文件或本地修改。
 
 `install` 遇到已有目标目录一律拒绝覆盖。换版时先向另一临时项目安装指定版本，对比现有 Skill、保留本地修改，再显式替换整个 Skill 目录。移除时先核对并备份自有内容，再删除该 Skill 目录；配套 CLI 随之移除。项目 Git 负责历史与差异追踪。
 
@@ -105,10 +105,10 @@ harn 不再提供 `update`、`status`、`remove`。没有持久记录，就不�
 
 ## 旧安装迁移
 
-新 harn 不读取、创建或迁移旧 `.harness/`、下载记录和锁。它只扫描当前 Skill 目录，不会自动删除旧数据。
+新 reed 不读取、创建或迁移旧 `.harness/`、下载记录和锁。它只扫描当前 Skill 目录，不会自动删除旧数据。
 
 1. 备份旧 Skill 中的本地修改和自有文件；从原记录或项目 Git 找回需安装的来源与版本。
-2. 使用新版 harn 向 `.agents/skills/` 安装所选版本；如果已有同名目录，先在临时项目安装并比较。
+2. 使用新版 reed 向 `.agents/skills/` 安装所选版本；如果已有同名目录，先在临时项目安装并比较。
 3. 确认 Skill 和配套 CLI 可用后，移入需保留的自有内容并更新旧路径引用。
 4. 确认旧目录无独有数据后，由项目维护者清理 `.harness/` 及其旧忽略规则。
 
@@ -120,7 +120,7 @@ SWE 统一安装 `skills/swe`，内部包含 `business-model/`、`system-design/
 
 安装时只传入 `--path skills/swe`，使用包含新结构的 commit 或后续标签。五个领域不单独安装、更新或登记版本；`skills/index.json` 只登记一个 SWE 版本。此前试用的同级 `swe-*` 领域包应在核对并保留本地修改后移除，避免旧入口继续被发现。
 
-共享规则、Schema 和唯一的 `runtime.json` 位于包内，五个领域共用 `bin/swe-cli`。各领域的 `contract.json` 仅描述包内 Schema 引用，由测试检查完整性，不控制安装与权限。完整平台 Skill 包随 Harn 发布，开发环境可使用本仓打包产物。
+共享规则、Schema 和唯一的 `runtime.json` 位于包内，五个领域共用 `bin/swe-cli`。各领域的 `contract.json` 仅描述包内 Schema 引用，由测试检查完整性，不控制安装与权限。完整平台 Skill 包随 ReedHarness 发布，开发环境可使用本仓打包产物。
 
 领域负责专业判断与产物边界，CLI 检查已编码规则，项目测试与运行工具提供行为证据。文件范围检查不替代共享文件内部条目的差异复核。
 

@@ -91,7 +91,7 @@ func TestArchitectureConflictingFilesCannotRender(t *testing.T) {
 // Invoke the actual command dispatcher in fresh processes, avoiding a shared
 // template instance, caches, or map iteration seed masking nondeterminism.
 func TestRenderDeterminismProcess(t *testing.T) {
-	if file := os.Getenv("HARN_TEST_RENDER_INPUT"); file != "" {
+	if file := os.Getenv("REED_TEST_RENDER_INPUT"); file != "" {
 		os.Exit(Run([]string{"system-design", "render", "--file", file}, nil, os.Stdout))
 	}
 }
@@ -107,7 +107,7 @@ func TestArchitectureRenderDeterministicAcrossProcesses(t *testing.T) {
 	}
 	render := func(file string) []byte {
 		cmd := exec.Command(binary, "-test.run=^TestRenderDeterminismProcess$")
-		cmd.Env = append(os.Environ(), "HARN_TEST_RENDER_INPUT="+file)
+		cmd.Env = append(os.Environ(), "REED_TEST_RENDER_INPUT="+file)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("render failed: %v\n%s", err, out)

@@ -20,7 +20,7 @@ assets=()
 for target in "${targets[@]}"; do
   goos="${target%/*}"
   goarch="${target#*/}"
-  asset="harn_${goos}_${goarch}"
+  asset="reed_${goos}_${goarch}"
   if [[ "$goos" == "windows" ]]; then
     asset="${asset}.exe"
   fi
@@ -29,14 +29,14 @@ for target in "${targets[@]}"; do
     cd "$root"
     CGO_ENABLED=0 GOOS="$goos" GOARCH="$goarch" go build \
       -trimpath \
-      -ldflags "-s -w -X github.com/AwayerCode/Harn/apps/harn/internal/buildinfo.Version=${version}" \
+      -ldflags "-s -w -X github.com/AwayerCode/ReedHarness/apps/reed/internal/buildinfo.Version=${version}" \
       -o "$dist/$asset" \
       .
   )
   assets+=("$asset")
 done
 
-# One Harn release carries the installer and complete platform Skill packages.
+# One ReedHarness release carries the installer and complete platform Skill packages.
 package_stage="$(mktemp -d)"
 trap 'rm -rf "$package_stage"' EXIT
 DIST_DIR="$package_stage" "$root/../swe-cli/scripts/build-package.sh" "$version"
@@ -55,4 +55,4 @@ done
   fi
 )
 
-printf 'built Harn %s in %s\n' "$version" "$dist"
+printf 'built ReedHarness %s in %s\n' "$version" "$dist"

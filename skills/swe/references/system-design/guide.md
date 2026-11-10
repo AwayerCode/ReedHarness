@@ -109,7 +109,7 @@ swe-cli system-design render --root /absolute/project --file system-design.yaml 
 
 ## 查看与展示流程
 
-当前版本优先使用固定地址 `system-design serve`；DSH 使用架构页签，插件负责启动或复用配套服务，不再另起单文件 `preview`。浏览器访问 `http://127.0.0.1:47831/harn/`。静态 HTML 仍只用于明确要求的离线导出。
+当前版本优先使用固定地址 `system-design serve`；DSH 使用架构页签，插件负责启动或复用配套服务，不再另起单文件 `preview`。浏览器访问 `http://127.0.0.1:47831/reed/`。静态 HTML 仍只用于明确要求的离线导出。
 
 1. 读取包内 `runtime.json`，核对 CLI 版本与摘要，使用资源目录内的 CLI 绝对路径。
 2. 明确允许读取的共同工作区。独立浏览器运行 `<CLI> system-design serve --root <工作区绝对路径> --expect-version <固定版本>`。服务只监听回环地址，端口固定；已有服务必须匹配工作区和版本才能复用，不通过换端口掩盖冲突。
@@ -165,7 +165,7 @@ modules:
 ```bash
 go run . system-design validate --root internal/systemdesign/testdata/project --file system-design.yaml
 go run . system-design check --root internal/systemdesign/testdata/project --file system-design.yaml
-go run . system-design render --root internal/systemdesign/testdata/project --file system-design.yaml > /tmp/harn-system-design.html
+go run . system-design render --root internal/systemdesign/testdata/project --file system-design.yaml > /tmp/reed-system-design.html
 ```
 
 ## 版本与配套工具

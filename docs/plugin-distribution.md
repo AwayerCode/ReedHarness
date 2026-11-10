@@ -2,7 +2,7 @@
 
 ## 目标与当前状态
 
-Harn 以插件市场作为正式安装、更新入口。发布包包含 SWE Skill、配套 Go 二进制和宿主适配，不包含完整源码仓库。Skill 方法与渲染核心只维护一份。
+ReedHarness 以插件市场作为正式安装、更新入口。发布包包含 SWE Skill、配套 Go 二进制和宿主适配，不包含完整源码仓库。Skill 方法与渲染核心只维护一份。
 
 当前提供六平台插件验证包、Codex 和 Claude 清单，以及 DSH 后台和页签适配。尚未发布到市场，也未完成各宿主实机安装验收，因此现有安装入口暂时保留；新链路验收后再移除旧入口。
 
@@ -16,13 +16,13 @@ Harn 以插件市场作为正式安装、更新入口。发布包包含 SWE Skil
 
 两种模式共用 YAML 校验、渲染核心。服务默认只读，不提供文件修改接口。YAML 是唯一持久化架构数据源。
 
-访问 `http://127.0.0.1:47831/harn/` 查看工作区项目列表。`--root` 是允许访问的目录边界；其下多个包含 `system-design.yaml` 的目录共用同一服务。端口占用时明确失败，不更换端口。独立服务的终端使用 Ctrl-C 停止。
+访问 `http://127.0.0.1:47831/reed/` 查看工作区项目列表。`--root` 是允许访问的目录边界；其下多个包含 `system-design.yaml` 的目录共用同一服务。端口占用时明确失败，不更换端口。独立服务的终端使用 Ctrl-C 停止。
 
 服务仅监听 IPv4 回环地址，检查 Host、请求方法和跨站访问。项目路径解析后不能越出工作区，不提供任意磁盘 HTML 或目录文件服务。
 
 ## DSH 接入
 
-插件通过 `webServer` 注册 `/harn/`、`/harn/health`、`/harn/resolve`、`/harn/view`、`/harn/state` 固定路由，转发给 Go。前端把会话目录提交给 Go 解析真实路径并验证工作区边界，使用返回的项目 URL 展示同源 iframe。
+插件通过 `webServer` 注册 `/reed/`、`/reed/health`、`/reed/resolve`、`/reed/view`、`/reed/state` 固定路由，转发给 Go。前端把会话目录提交给 Go 解析真实路径并验证工作区边界，使用返回的项目 URL 展示同源 iframe。
 
 插件通过 `skills.register` 注册 SWE 入口和资源目录，文档、Schema 和 CLI 从同一插件包加载。
 
@@ -30,8 +30,8 @@ Harn 以插件市场作为正式安装、更新入口。发布包包含 SWE Skil
 
 ```yaml
 - insert:
-    - id: harn
-      name: dsh-harn
+    - id: reed
+      name: dsh-reed
       config:
         root: /absolute/workspace
 ```
@@ -56,10 +56,10 @@ Go 服务只允许同源嵌入，原单文件预览仍禁止嵌入。代理保�
 bash plugins/build.sh 0.1.0
 ```
 
-版本为无 `v` 前缀的 SemVer。复用现有 SWE 六平台构建，输出 `apps/swe-cli/dist/harn-plugin_<系统>_<架构>.tar.gz`，展开目录在 `apps/swe-cli/dist/plugins/<版本>/<平台>/`。包内 `runtime.json` 固定 CLI 版本与摘要。
+版本为无 `v` 前缀的 SemVer。复用现有 SWE 六平台构建，输出 `apps/swe-cli/dist/reed-plugin_<系统>_<架构>.tar.gz`，展开目录在 `apps/swe-cli/dist/plugins/<版本>/<平台>/`。包内 `runtime.json` 固定 CLI 版本与摘要。
 
 Codex、Claude 清单由相同版本生成，均引用 `./skills/`，各平台验证包包含完整运行资源。两个市场的平台选择及实际安装仍需验证，不能将构建成功描述为市场可安装。
 
-DSH npm 主包位于构建目录的 `dsh-harn/`，六个平台子包为 `dsh-harn-<系统>-<架构>/`。主包以固定版本的 `optionalDependencies` 选择平台，安装脚本校验版本和 SHA-256 后将二进制放入 Skill。禁用安装脚本时需显式运行包内 `node install.mjs`。发布顺序为六个子包、主包、市场登记；本地平台验证归档不是六次同名 npm 发布。
+DSH npm 主包位于构建目录的 `dsh-reed/`，六个平台子包为 `dsh-reed-<系统>-<架构>/`。主包以固定版本的 `optionalDependencies` 选择平台，安装脚本校验版本和 SHA-256 后将二进制放入 Skill。禁用安装脚本时需显式运行包内 `node install.mjs`。发布顺序为六个子包、主包、市场登记；本地平台验证归档不是六次同名 npm 发布。
 
 接口依据见 [Codex 插件打包](https://developers.openai.com/plugins/build/plugins)、[Claude 插件清单](https://code.claude.com/docs/en/plugins-reference)和 [DSH Skill 注册接口](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/skill/skill/src/index.ts)。

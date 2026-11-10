@@ -20,7 +20,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/AwayerCode/Harn/apps/swe-cli/internal/systemdesign"
+	"github.com/AwayerCode/ReedHarness/apps/swe-cli/internal/systemdesign"
 )
 
 func systemDesignPreview(args []string, out io.Writer) int {

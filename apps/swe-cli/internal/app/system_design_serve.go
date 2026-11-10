@@ -13,7 +13,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/AwayerCode/Harn/apps/swe-cli/internal/systemdesign"
+	"github.com/AwayerCode/ReedHarness/apps/swe-cli/internal/systemdesign"
 )
 
 func systemDesignServe(args []string, out io.Writer) int {
@@ -59,7 +59,7 @@ func systemDesignServe(args []string, out io.Writer) int {
 		case <-finished:
 		}
 	}()
-	if encode(out, map[string]string{"url": "http://" + host + "/harn/", "version": Version}, 0) != 0 {
+	if encode(out, map[string]string{"url": "http://" + host + "/reed/", "version": Version}, 0) != 0 {
 		return 2
 	}
 	if err := server.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {

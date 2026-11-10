@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/AwayerCode/Harn/apps/swe-cli/internal/systemdesign"
+	"github.com/AwayerCode/ReedHarness/apps/swe-cli/internal/systemdesign"
 )
 
 const scopedDesign = `schema_version: 1

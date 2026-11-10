@@ -86,7 +86,7 @@ func FetchOptional(ctx context.Context, client *http.Client, archiveURL string, 
 	if err != nil {
 		return fmt.Errorf("create archive request: %w", err)
 	}
-	request.Header.Set("User-Agent", "harn")
+	request.Header.Set("User-Agent", "reed")
 
 	response, err := client.Do(request)
 	if err != nil {

@@ -19,7 +19,7 @@ for (const platform of platforms) {
   execFileSync("tar", ["-xzf", join(dist, `swe_${platform}.tar.gz`), "-C", target]);
   const runtime = JSON.parse(await readFile(join(target, "skills/swe/runtime.json"), "utf8"));
   if (runtime.version !== version) throw new Error(`SWE ${platform} runtime version does not match ${version}; rebuild the Skill packages`);
-  const manifest = { name: "harn", version, description: "SWE engineering skills and architecture tools", skills: "./skills/" };
+  const manifest = { name: "reed", version, description: "SWE engineering skills and architecture tools", skills: "./skills/" };
   for (const host of ["codex", "claude"]) {
     await mkdir(join(target, `.${host}-plugin`), { recursive: true });
     await writeFile(join(target, `.${host}-plugin/plugin.json`), JSON.stringify(manifest, null, 2) + "\n");
@@ -29,8 +29,8 @@ for (const platform of platforms) {
   pkg.os = [platform.split("_")[0] === "windows" ? "win32" : platform.split("_")[0]];
   pkg.cpu = [platform.endsWith("amd64") ? "x64" : "arm64"];
   await writeFile(join(target, "package.json"), JSON.stringify(pkg, null, 2) + "\n");
-  execFileSync("tar", ["-czf", join(staging, `harn-plugin_${platform}.tar.gz`), "-C", target, "."]);
-  const name = "dsh-harn-" + platform.replace("_", "-");
+  execFileSync("tar", ["-czf", join(staging, `reed-plugin_${platform}.tar.gz`), "-C", target, "."]);
+  const name = "dsh-reed-" + platform.replace("_", "-");
   optionalDependencies[name] = version;
   const native = join(packages, name);
   await mkdir(native, { recursive: true });
@@ -39,7 +39,7 @@ for (const platform of platforms) {
   await cp(join(target, "skills/swe/runtime.json"), join(native, "runtime.json"));
   await writeFile(join(native, "package.json"), JSON.stringify({ name, version, os: pkg.os, cpu: pkg.cpu, files: [binary, "runtime.json"] }, null, 2) + "\n");
 }
-const npmRoot = join(packages, "dsh-harn");
+const npmRoot = join(packages, "dsh-reed");
 await mkdir(npmRoot, { recursive: true });
 await cp(join(root, "plugins/dsh"), npmRoot, { recursive: true });
 await cp(join(root, "skills/swe"), join(npmRoot, "skills/swe"), { recursive: true });
@@ -58,7 +58,7 @@ try { await rename(packages, destination); } catch (error) {
   throw error;
 }
 for (const platform of platforms) {
-  const archive = `harn-plugin_${platform}.tar.gz`;
+  const archive = `reed-plugin_${platform}.tar.gz`;
   await rename(join(staging, archive), join(dist, archive));
 }
 } finally { await rm(staging, { recursive: true, force: true }); }

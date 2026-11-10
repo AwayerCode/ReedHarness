@@ -1,22 +1,22 @@
 #!/usr/bin/env sh
 set -eu
 
-# Download, verify and run Harn temporarily; leave only selected Skills in the project.
+# Download, verify and run ReedHarness temporarily; leave only selected Skills in the project.
 #
-#   curl -fsSL https://raw.githubusercontent.com/AwayerCode/Harn/main/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/AwayerCode/ReedHarness/main/install.sh | sh
 #   curl -fsSL .../install.sh | sh -s -- --version <release> --root ./my-project -- search
 
-repo="AwayerCode/Harn"
-version="${HARN_VERSION:-}"
+repo="AwayerCode/ReedHarness"
+version="${REED_VERSION:-}"
 root="."
 
 usage() {
   cat <<'EOF'
-Usage: install.sh [--version <harn-release>] [--root <dir>] -- [harn command and arguments]
+Usage: install.sh [--version <reed-release>] [--root <dir>] -- [reed command and arguments]
 
-  --version <tag>  Select the harn release (default: latest release)
+  --version <tag>  Select the reed release (default: latest release)
   --root <dir>     Working directory for the command (default: current directory)
-  --              Pass the remaining arguments to harn (default command: search)
+  --              Pass the remaining arguments to reed (default command: search)
 
 The executable is removed after the command; no global or project installation.
 EOF
@@ -68,7 +68,7 @@ case "$(uname -m)" in
     ;;
 esac
 
-asset="harn_${os}_${arch}"
+asset="reed_${os}_${arch}"
 if [ -n "$version" ]; then
   base="https://github.com/${repo}/releases/download/${version}"
 else

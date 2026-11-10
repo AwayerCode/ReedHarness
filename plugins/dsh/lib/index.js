@@ -4,11 +4,11 @@ import { readFile, realpath } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const name = "harn";
+export const name = "reed";
 export const inject = ["webServer", "skills"];
 const origin = "http://127.0.0.1:47831";
 const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)));
-const routes = ["/harn/", "/harn/health", "/harn/resolve", "/harn/view", "/harn/state"];
+const routes = ["/reed/", "/reed/health", "/reed/resolve", "/reed/view", "/reed/state"];
 
 export function apply(ctx, config = {}) {
   const skillRoot = join(packageRoot, "skills/swe");
@@ -22,12 +22,12 @@ export function apply(ctx, config = {}) {
     const root = await realpath(config.root || process.cwd());
     const runtime = JSON.parse(await readFile(join(packageRoot, "skills/swe/runtime.json"), "utf8"));
     async function health() {
-      const response = await fetch(origin + "/harn/health", { signal: AbortSignal.timeout(1500) });
-      if (!response.ok) throw new Error("Harn health request failed");
+      const response = await fetch(origin + "/reed/health", { signal: AbortSignal.timeout(1500) });
+      if (!response.ok) throw new Error("ReedHarness health request failed");
       const info = await response.json();
-      if (info.service !== "harn" || info.version !== runtime.version || info.root !== root) {
-        const error = new Error("Harn fixed address is occupied by a different version or workspace; stop an independently started service before upgrading");
-        error.retiring = info.service === "harn" && info.root === root;
+      if (info.service !== "reed" || info.version !== runtime.version || info.root !== root) {
+        const error = new Error("ReedHarness fixed address is occupied by a different version or workspace; stop an independently started service before upgrading");
+        error.retiring = info.service === "reed" && info.root === root;
         throw error;
       }
     }
@@ -39,14 +39,14 @@ export function apply(ctx, config = {}) {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
-    if (disposed) throw new Error("Harn plugin disposed");
+    if (disposed) throw new Error("ReedHarness plugin disposed");
     const binary = join(packageRoot, "skills/swe/bin", process.platform === "win32" ? "swe-cli.exe" : "swe-cli");
     child = spawn(binary, ["system-design", "serve", "--root", root, "--expect-version", runtime.version, "--parent-stdin"], { stdio: ["pipe", "pipe", "pipe"] });
     await new Promise((resolve, reject) => {
       let output = "";
-      const timer = setTimeout(() => { child.kill(); reject(new Error("Harn startup timed out")); }, 15000);
+      const timer = setTimeout(() => { child.kill(); reject(new Error("ReedHarness startup timed out")); }, 15000);
       child.once("error", error => { clearTimeout(timer); reject(error); });
-      child.once("exit", code => { clearTimeout(timer); reject(new Error("Harn exited: " + code)); });
+      child.once("exit", code => { clearTimeout(timer); reject(new Error("ReedHarness exited: " + code)); });
       child.stderr.resume();
       child.stdout.on("data", data => {
         output += data;
@@ -54,7 +54,7 @@ export function apply(ctx, config = {}) {
           clearTimeout(timer);
           try {
             const info = JSON.parse(output.split("\n")[0]);
-            if (!info.url) throw new Error("Harn failed to start: " + output);
+            if (!info.url) throw new Error("ReedHarness failed to start: " + output);
             resolve();
           } catch (error) { reject(error); }
         }
@@ -98,5 +98,5 @@ export function apply(ctx, config = {}) {
         child.stdin.end();
       }
     };
-  }, "harn routes");
+  }, "reed routes");
 }

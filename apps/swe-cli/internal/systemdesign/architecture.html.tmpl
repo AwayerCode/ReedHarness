@@ -299,13 +299,13 @@ dialog{width:min(1160px,calc(100vw - 40px));height:min(680px,84dvh);border:1px s
   const select = document.getElementById('theme-mode');
   const system = window.matchMedia('(prefers-color-scheme: dark)');
   const valid = value => ['auto','light','dark'].includes(value);
-  try { const saved = localStorage.getItem('harn-diagram-theme'); if (valid(saved)) select.value = saved; } catch {}
+  try { const saved = localStorage.getItem('reed-diagram-theme'); if (valid(saved)) select.value = saved; } catch {}
   function apply() {
     document.documentElement.dataset.theme = select.value === 'auto' ? (system.matches ? 'dark' : 'light') : select.value;
   }
   select.addEventListener('change', () => {
     if (!valid(select.value)) select.value = 'auto';
-    try { localStorage.setItem('harn-diagram-theme', select.value); } catch {}
+    try { localStorage.setItem('reed-diagram-theme', select.value); } catch {}
     apply();
   });
   system.addEventListener('change', apply);

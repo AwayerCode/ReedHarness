@@ -6,7 +6,7 @@ version="${1:-$(git -C "$root" describe --tags --match 'v[0-9]*' --always --dirt
 dist="${DIST_DIR:-$root/dist}"
 # Validate both first-party and third-party catalog paths before producing packages.
 # SWE remains the only platform package; external Skills ship via source archives.
-(cd "$root/../harn" && go test ./internal/installer -run Catalog)
+(cd "$root/../reed" && go test ./internal/installer -run Catalog)
 mkdir -p "$dist"
 dist="$(cd "$dist" && pwd)"
 
@@ -33,7 +33,7 @@ for target in "${targets[@]}"; do
     cd "$root"
     CGO_ENABLED=0 GOOS="$goos" GOARCH="$goarch" go build \
       -trimpath \
-      -ldflags "-s -w -X github.com/AwayerCode/Harn/apps/swe-cli/internal/app.Version=${version}" \
+      -ldflags "-s -w -X github.com/AwayerCode/ReedHarness/apps/swe-cli/internal/app.Version=${version}" \
       -o "$dist/bin/$asset" \
       .
   )

@@ -25,7 +25,7 @@ func newArchiveServer(t *testing.T, files map[string]archiveEntry) *httptest.Ser
 	tarWriter := tar.NewWriter(gzipWriter)
 	for name, entry := range files {
 		header := &tar.Header{
-			Name:     "Harn-main/" + name,
+			Name:     "ReedHarness-main/" + name,
 			Mode:     entry.mode,
 			Size:     int64(len(entry.body)),
 			Typeflag: tar.TypeReg,

@@ -11,13 +11,13 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/AwayerCode/Harn/apps/swe-cli/internal/workspace"
+	"github.com/AwayerCode/ReedHarness/apps/swe-cli/internal/workspace"
 )
 
 // A real subprocess exercises the retained executable and its binding after the
 // original installed package is replaced or deleted, not just Run in-process.
 func TestAdoptionCLIProcess(t *testing.T) {
-	if os.Getenv("HARN_ADOPTION_TEST_PROCESS") != "1" {
+	if os.Getenv("REED_ADOPTION_TEST_PROCESS") != "1" {
 		return
 	}
 	for i, arg := range os.Args {
@@ -74,7 +74,7 @@ func adoptionPackage(t *testing.T, root string) string {
 func adoptionCLI(t *testing.T, bin string, want int, args ...string) {
 	t.Helper()
 	cmd := exec.Command(bin, append([]string{"-test.run=^TestAdoptionCLIProcess$", "--"}, args...)...)
-	cmd.Env = append(os.Environ(), "HARN_ADOPTION_TEST_PROCESS=1")
+	cmd.Env = append(os.Environ(), "REED_ADOPTION_TEST_PROCESS=1")
 	out, err := cmd.CombinedOutput()
 	code := 0
 	if err != nil {

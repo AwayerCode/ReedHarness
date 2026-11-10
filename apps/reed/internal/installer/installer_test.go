@@ -81,7 +81,7 @@ func makeArchiveWithoutTest(files archiveFiles) []byte {
 	for _, name := range names {
 		file := files[name]
 		header := &tar.Header{
-			Name:     "Harn-main/" + name,
+			Name:     "ReedHarness-main/" + name,
 			Mode:     file.mode,
 			Size:     int64(len(file.body)),
 			Typeflag: tar.TypeReg,

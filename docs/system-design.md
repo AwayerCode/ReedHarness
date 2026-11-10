@@ -5,7 +5,7 @@
 | 字段 | 值 |
 |---|---|
 | 类型 | system-design |
-| 任务 | Harn 以 Skill 为核心的独立 SWE 任务执行与验收设计 |
+| 任务 | ReedHarness 以 Skill 为核心的独立 SWE 任务执行与验收设计 |
 | 范围 | Agent 接入、Skill 内循环、单次校验核心、项目配置及项目本地配套分发；不含任务编排 |
 | 依据 | [仓库约定](../AGENTS.md)、[现有 SWE](../skills/swe/SKILL.md)、[接口协议](interface-protocol.md)及本次用户讨论 |
 | 状态 | 草案 |
@@ -14,13 +14,13 @@
 
 ### 核心判断
 
-Harn 是面向 SWE 的 Harness。Agent 是外部执行主体；Harn 通过 Skill 提供专业方法与任务边界，以 YAML 声明模块架构，并用 CLI 校验设计与实现。Harness 内采用 Go CLI + Skill：Skill 承载方法与项目适配，CLI 承担确定性校验，不设置可编程扩展层。
+ReedHarness 是面向 SWE 的 Harness。Agent 是外部执行主体；ReedHarness 通过 Skill 提供专业方法与任务边界，以 YAML 声明模块架构，并用 CLI 校验设计与实现。Harness 内采用 Go CLI + Skill：Skill 承载方法与项目适配，CLI 承担确定性校验，不设置可编程扩展层。
 
 > Skill 定义执行—校验—反馈—修正流程；Agent 执行循环；swe-cli 完成一次确定性校验并返回结果。
 
 首版支持设计、实现、测试与只读审查任务，不要求每次任务经过全部专业工作流。交付目标是有范围、有证据的任务结果；审查任务发现问题也可以正常完成，不能强制审查者修复被审查对象。
 
-本次是目标系统设计，不宣称新能力已经实现。当前仓库有 Markdown 工作流、Go 分发工具 harn，以及 Go swe-cli 检查核心。原 Node 原型已迁为 Go，Node 打包与 TS 扩展实现已移除；文档、关系、结构和范围检查已迁入 Go，Skill 已切换 CLI，SWE 平台包已直接包含 CLI，harn 只安装包内容；分发工具不再维护持久安装状态或项目锁。本文及接口协议中的新命令、路径和数据是设计约定，实施前通过契约评审和 Go 构建验证。
+本次是目标系统设计，不宣称新能力已经实现。当前仓库有 Markdown 工作流、Go 分发工具 reed，以及 Go swe-cli 检查核心。原 Node 原型已迁为 Go，Node 打包与 TS 扩展实现已移除；文档、关系、结构和范围检查已迁入 Go，Skill 已切换 CLI，SWE 平台包已直接包含 CLI，reed 只安装包内容；分发工具不再维护持久安装状态或项目锁。本文及接口协议中的新命令、路径和数据是设计约定，实施前通过契约评审和 Go 构建验证。
 
 ### 范围与明确排除
 
@@ -38,21 +38,21 @@ Harn 是面向 SWE 的 Harness。Agent 是外部执行主体；Harn 通过 Skill
 | [Oh My OpenAgent](https://github.com/code-yeongyu/oh-my-openagent) | 只作为运行恢复的背景参照；当前已包含自身 Agent 运行时 | 不接管 Agent 运行时 |
 | [Harness²](https://github.com/google-research/harness2) | 方法改进需要试验与证据，和业务任务使用固定校验器分开 | 不自动修改 Skill、工具或标准 |
 
-这些实践支持 Harn 已有分工，不是本方案的替代来源。本设计保存当前需求、验收边界和模块职责，接口协议保存数据与失败语义；不再依赖旧方案 issue。实施后共享执行规则仍只有 [execution.md](../skills/swe/references/standards/execution.md) 一份，本文不作为第二套运行指令。
+这些实践支持 ReedHarness 已有分工，不是本方案的替代来源。本设计保存当前需求、验收边界和模块职责，接口协议保存数据与失败语义；不再依赖旧方案 issue。实施后共享执行规则仍只有 [execution.md](../skills/swe/references/standards/execution.md) 一份，本文不作为第二套运行指令。
 
 ## 责任分层
 
 ### Agent 与工具的职责
 
-Agent 负责理解目标、执行专业判断、修改授权产物、调用工具并确认整体完成。Harness 不自行调用模型。用户或宿主通过项目约定、明确任务指令或原生 Skill 机制使 Agent 读取 SWE 入口；harn 不自动改写业务项目的 AGENTS.md。
+Agent 负责理解目标、执行专业判断、修改授权产物、调用工具并确认整体完成。Harness 不自行调用模型。用户或宿主通过项目约定、明确任务指令或原生 Skill 机制使 Agent 读取 SWE 入口；reed 不自动改写业务项目的 AGENTS.md。
 
 Harness 的中心是 Skill：总入口选择专业方法，共享执行规范承载任务内闭环，专业 workflow 引用它并说明本专业的输入、动作和完成条件。swe-cli 和分发工具围绕该流程服务。
 
 ### Harness 内职责与依赖
 
-下表的责任层是内部实现分类，不增加产品层次。Skill 流程在 Agent 会话中运行；单次检查在本地短生命周期进程中运行；harn 仅在查找、安装或列出 Skill 时运行。
+下表的责任层是内部实现分类，不增加产品层次。Skill 流程在 Agent 会话中运行；单次检查在本地短生命周期进程中运行；reed 仅在查找、安装或列出 Skill 时运行。
 
-CLI 请求入口组合规则计算与文件读取。规则计算不依赖某个 Agent、安装器或具体 Git 实现。harn 与 swe-cli 通过完整 Skill 包交付连接，不相互导入源码。当前 CLI 不加载项目中的任意脚本；源码依赖解析通过受控语言适配器边界接入。适配器只解释语言引用，YAML 结构、模块映射、允许依赖和最终诊断仍由核心统一裁决。Skill 引用公开命令而非内部实现。
+CLI 请求入口组合规则计算与文件读取。规则计算不依赖某个 Agent、安装器或具体 Git 实现。reed 与 swe-cli 通过完整 Skill 包交付连接，不相互导入源码。当前 CLI 不加载项目中的任意脚本；源码依赖解析通过受控语言适配器边界接入。适配器只解释语言引用，YAML 结构、模块映射、允许依赖和最终诊断仍由核心统一裁决。Skill 引用公开命令而非内部实现。
 
 ## 模块与依赖
 
@@ -62,7 +62,7 @@ CLI 请求入口组合规则计算与文件读取。规则计算不依赖某个 
 | check-entry | 交互层 | 参数解析、版本核对、单次检查组合与结果归并 | swe-cli check、scope、version、help | rules、抽象:workspace.read | 迁移为 Go 核心入口 |
 | rules | 业务能力层 | 文档、设计、产物、结构及范围的确定性判断 | 接受已读取输入，生成逐项诊断 | 无 | 迁移既有 Python 检查语义 |
 | workspace | 技术实现层 | 读取文件、Git 状态、契约与范围快照 | 工作区读取接口 | 无 | Go 标准库和外部 Git |
-| distribution | 业务编排层 | 安装选定 Skill 包，检查入口并写入空目标 | harn search、install、list、version | 抽象:release.fetch、抽象:install.commit | 演进现有 Go harn |
+| distribution | 业务编排层 | 安装选定 Skill 包，检查入口并写入空目标 | reed search、install、list、version | 抽象:release.fetch、抽象:install.commit | 演进现有 Go reed |
 | delivery-io | 技术实现层 | 下载、暂存与 Skill 文件发布 | 发行获取与安装提交接口 | 无 | 复用 source、installer 技术代码 |
 | runtime | 运行组装 | 连接 CLI、规则与工作区接口 | 二进制启动与发布构建入口 | check-entry、rules、workspace | Go 程序入口与构建脚本 |
 
@@ -85,7 +85,7 @@ CLI 请求入口组合规则计算与文件读取。规则计算不依赖某个 
 
 ### 安装与进入任务
 
-1. 用户通过 harn 选定 SWE 资源和明确版本。distribution 按 `协议:release.fetch` 取得包含对应平台二进制的完整 Skill 包，按 `协议:install.commit` 校验并提交配套安装。
+1. 用户通过 reed 选定 SWE 资源和明确版本。distribution 按 `协议:release.fetch` 取得包含对应平台二进制的完整 Skill 包，按 `协议:install.commit` 校验并提交配套安装。
 2. 用户或项目约定使 Agent 按 `协议:skill.enter` 读取入口。Skill 识别任务类型，选择专业 workflow；没有依据时只阻塞相关动作，不强制补齐全套设计。
 3. Agent 确认目标、依据、可写范围、完成条件、必需检查和可用环境，构成任务上下文。专业依据引用项目现有权威位置，不创建第二套要求。
 
@@ -135,7 +135,7 @@ runtime 负责创建读取适配器与规则并注入 check-entry，结束时释
 
 ### Go CLI 与 Skill 定制
 
-harn 和 swe-cli 均使用 Go，按平台编译独立可执行文件，不携带 Node 或 TS 执行器。二者职责仍分离：harn 管分发，swe-cli 管单次校验。源码语言相同不意味着合并成一个工具。
+reed 和 swe-cli 均使用 Go，按平台编译独立可执行文件，不携带 Node 或 TS 执行器。二者职责仍分离：reed 管分发，swe-cli 管单次校验。源码语言相同不意味着合并成一个工具。
 
 Skill 保存共同方法及项目适配指引；项目约定、契约和声明式配置保存技术栈、目录边界、检查参数与验收要求。项目配置与自定义方法独立于托管资源，更新时保留。CLI 只解释已支持的配置，不执行配置中的任意代码。Go、TypeScript 和 C++ 语言适配器随 CLI 编译；其他语言可以按相同边界扩展，但必须使用固定版本、明确输入和可回归的引用解析，不能由项目配置任意注入脚本。
 
@@ -145,11 +145,11 @@ Skill 保存共同方法及项目适配指引；项目约定、契约和声明�
 
 ### 分发与完整性
 
-Skill 是唯一项目交付单元，方法与配套 CLI 位于 `.agents/skills/<名称>/`，例如 `.agents/skills/swe/bin/swe-cli`。harn 是临时分发工具，不在项目中安装自身，也不维护下载记录、项目锁或安装数据库。平台二进制与生成的 `runtime.json` 一起加入项目忽略规则，Skill 文本可随 Git 保存。
+Skill 是唯一项目交付单元，方法与配套 CLI 位于 `.agents/skills/<名称>/`，例如 `.agents/skills/swe/bin/swe-cli`。reed 是临时分发工具，不在项目中安装自身，也不维护下载记录、项目锁或安装数据库。平台二进制与生成的 `runtime.json` 一起加入项目忽略规则，Skill 文本可随 Git 保存。
 
 仓库用 `skills/<名称>/` 保存自有 Skill、`skills/3rdparty/<名称>/` 保存第三方 Skill，统一索引的 `path` 指向本仓位置，`source.path` 保留上游位置。安装旧的扁平路径时按同份归档内的索引解析，新目录层级不进入项目安装路径；无索引的历史包保持直接路径安装。第三方许可证和资源原样保留。
 
-仅创建 Harn Release，完整平台 Skill 包作为其资源；打包生成的本地清单固定包内 CLI 版本与摘要，无下载地址。项目中的文件和 Git 历史提供实际内容与变更依据。harn 的 list 扫描本地 Skill，不推断安装来源、版本或完整性。移除依赖持久记录的 update、status、remove；换版先安装到临时项目并对比，替换与移除由维护者显式操作。
+仅创建 ReedHarness Release，完整平台 Skill 包作为其资源；打包生成的本地清单固定包内 CLI 版本与摘要，无下载地址。项目中的文件和 Git 历史提供实际内容与变更依据。reed 的 list 扫描本地 Skill，不推断安装来源、版本或完整性。移除依赖持久记录的 update、status、remove；换版先安装到临时项目并对比，替换与移除由维护者显式操作。
 
 所选 Skill 包下载并检查入口后，逐个独占创建目标目录并复制内容，顶层 SKILL.md 最后发布。目标已存在时拒绝安装，不覆盖本地内容；普通失败清理本次创建的 Skill。没有项目锁、持久事务或崩溃恢复承诺，异常终止可能留下不完整目录，需核对后清理重装；不在安装期间读取或编辑目标。安装边界遵守 `协议:install.commit`。
 
@@ -163,8 +163,8 @@ SHA-256 校验下载资产与发行清单的一致性，不防止有写权限者
 | check-entry | 计划 apps/swe-cli/internal/app/ | swe-cli | 不调用模型、不持有跨任务调度状态 |
 | rules | 计划 apps/swe-cli/internal/checks/ | 核心检查注册接口 | 不依赖安装器；schema 引用唯一来源 |
 | workspace | 计划 apps/swe-cli/internal/workspace/ | workspace.read | 不修改业务文件；仅显式创建基线 |
-| distribution | apps/harn/internal/app/、internal/installer/ | 现有 harn 命令 | 沿用 CLI，新增配套能力不分叉安装器 |
-| delivery-io | apps/harn/internal/source/、internal/installer/ 的文件操作 | release.fetch、install.commit | 校验后安装到空目录，不维护项目记录或锁 |
+| distribution | apps/reed/internal/app/、internal/installer/ | 现有 reed 命令 | 沿用 CLI，新增配套能力不分叉安装器 |
+| delivery-io | apps/reed/internal/source/、internal/installer/ 的文件操作 | release.fetch、install.commit | 校验后安装到空目录，不维护项目记录或锁 |
 | runtime | 计划 apps/swe-cli/main.go 与构建配置 | 二进制 main | 只组装依赖，核心源码不随业务资源展开 |
 
 ## 技术选型
@@ -174,7 +174,7 @@ SHA-256 校验下载资产与发行清单的一致性，不防止有写权限者
 | 系统边界 | 面向 SWE，通过 Skill 指导 Agent，YAML 定义架构，CLI 执行校验 | 不实现 Agent 本体 | 用户已确认 |
 | 当前范围 | 独立任务，循环位于 Skill 内 | 先闭合任务验收，不引入任务编排 | 用户已确认 |
 | 校验与方法 | Go swe-cli + Skill | 核心稳定校验，Skill 与项目配置承担定制，取消 TS 扩展 | 用户已确认 |
-| 分发工具 | 继续 Go harn | 沿用现有能力，与 Go swe-cli 分工协作 | 用户已确认 |
+| 分发工具 | 继续 Go reed | 沿用现有能力，与 Go swe-cli 分工协作 | 用户已确认 |
 | 构建路径 | Go 按 OS/架构编译二进制 | 无额外脚本运行时；各平台仍需实测 | 用户已确认 |
 | 任务状态 | 会话上下文与按需交接，无任务数据库 | 满足单任务范围，不预建调度系统 | 设计建议 |
 | 循环默认值 | 5 轮上限、连续 2 轮无进展退出 | 保留已讨论的设计提议，统一替代现行三次规则 | 设计建议 |
@@ -182,6 +182,6 @@ SHA-256 校验下载资产与发行清单的一致性，不防止有写权限者
 
 ## 待确认问题
 
-1. Go swe-cli 已迁移现有 SWE 检查，使用 Go 1.24+ 并从唯一来源生成内嵌 schema；配套 CLI 直接进入平台 Skill 包，由包内 runtime.json 自检，仍需完成 Harn 及完整包的发行上传和各平台实际运行验收。
+1. Go swe-cli 已迁移现有 SWE 检查，使用 Go 1.24+ 并从唯一来源生成内嵌 schema；配套 CLI 直接进入平台 Skill 包，由包内 runtime.json 自检，仍需完成 ReedHarness 及完整包的发行上传和各平台实际运行验收。
 2. 六平台为交付目标；最低 OS/libc、签名要求、包体积和启动耗时尚无实测，不作数值承诺。发布前须记录平台实测矩阵，交叉编译不能代替运行验证。
 3. 项目配置格式及尚未实现的检查命令形态是本设计建议，需在实施契约评审时冻结；不改变既有已确认的架构和职责。机器 schema 落地后作为字段权威，本文引用它，避免双份维护。

@@ -9,7 +9,7 @@ for executable in go git "$node_binary" "$python_binary"; do
   command -v "$executable" >/dev/null || { echo "Missing verification dependency: $executable" >&2; exit 1; }
 done
 
-for module in apps/harn apps/swe-cli; do
+for module in apps/reed apps/swe-cli; do
   unformatted="$(find "$module" -name '*.go' -type f -print0 | xargs -0 gofmt -l)"
   if [[ -n "$unformatted" ]]; then
     echo "Go formatting required:" >&2
@@ -20,8 +20,8 @@ for module in apps/harn apps/swe-cli; do
 done
 "$node_binary" --test apps/swe-cli/internal/systemdesign/*_test.cjs
 sh -n install.sh
-bash -n scripts/verify.sh apps/harn/scripts/build-release.sh apps/swe-cli/scripts/build-package.sh
+bash -n scripts/verify.sh apps/reed/scripts/build-release.sh apps/swe-cli/scripts/build-package.sh
 "$python_binary" -B skills/knowledge-doc-guard/scripts/knowledge_lint.py --changed
 git diff --check
-apps/harn/scripts/build-release.sh
+apps/reed/scripts/build-release.sh
 apps/swe-cli/scripts/build-package.sh

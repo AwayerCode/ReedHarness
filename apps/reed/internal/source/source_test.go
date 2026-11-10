@@ -24,27 +24,27 @@ func TestResolveArchiveURL(t *testing.T) {
 	}{
 		{
 			name:    "branch",
-			source:  "https://github.com/AwayerCode/Harn.git",
+			source:  "https://github.com/AwayerCode/ReedHarness.git",
 			version: "branch:main",
-			want:    "https://github.com/AwayerCode/Harn/archive/refs/heads/main.tar.gz",
+			want:    "https://github.com/AwayerCode/ReedHarness/archive/refs/heads/main.tar.gz",
 		},
 		{
 			name:    "tag with slash",
-			source:  "https://github.com/AwayerCode/Harn",
+			source:  "https://github.com/AwayerCode/ReedHarness",
 			version: "tag:release/2026.10",
-			want:    "https://github.com/AwayerCode/Harn/archive/refs/tags/release/2026.10.tar.gz",
+			want:    "https://github.com/AwayerCode/ReedHarness/archive/refs/tags/release/2026.10.tar.gz",
 		},
 		{
 			name:    "branch requiring escaping",
-			source:  "https://github.com/AwayerCode/Harn",
+			source:  "https://github.com/AwayerCode/ReedHarness",
 			version: "branch:feature/new skill",
-			want:    "https://github.com/AwayerCode/Harn/archive/refs/heads/feature/new%20skill.tar.gz",
+			want:    "https://github.com/AwayerCode/ReedHarness/archive/refs/heads/feature/new%20skill.tar.gz",
 		},
 		{
 			name:    "commit",
-			source:  "https://github.com/AwayerCode/Harn",
+			source:  "https://github.com/AwayerCode/ReedHarness",
 			version: "commit:0123456789abcdef",
-			want:    "https://github.com/AwayerCode/Harn/archive/0123456789abcdef.tar.gz",
+			want:    "https://github.com/AwayerCode/ReedHarness/archive/0123456789abcdef.tar.gz",
 		},
 		{
 			name:    "direct archive",
@@ -54,13 +54,13 @@ func TestResolveArchiveURL(t *testing.T) {
 		},
 		{
 			name:    "unqualified version",
-			source:  "https://github.com/AwayerCode/Harn",
+			source:  "https://github.com/AwayerCode/ReedHarness",
 			version: "main",
 			wantErr: true,
 		},
 		{
 			name:    "unsupported host",
-			source:  "https://example.com/AwayerCode/Harn",
+			source:  "https://example.com/AwayerCode/ReedHarness",
 			version: "branch:main",
 			wantErr: true,
 		},
@@ -90,10 +90,10 @@ func TestResolveArchiveURL(t *testing.T) {
 func TestFetchSelectsPathsAndPreservesExecutableMode(t *testing.T) {
 	t.Parallel()
 	archive := testArchive(t, []testFile{
-		{name: "._Harn-main", body: "apple double", mode: 0o644},
-		{name: "Harn-main/skills/swe/SKILL.md", body: "skill", mode: 0o644},
-		{name: "Harn-main/skills/swe/scripts/check.py", body: "#!/usr/bin/env python3\n", mode: 0o755},
-		{name: "Harn-main/skills/other/SKILL.md", body: "other", mode: 0o644},
+		{name: "._ReedHarness-main", body: "apple double", mode: 0o644},
+		{name: "ReedHarness-main/skills/swe/SKILL.md", body: "skill", mode: 0o644},
+		{name: "ReedHarness-main/skills/swe/scripts/check.py", body: "#!/usr/bin/env python3\n", mode: 0o755},
+		{name: "ReedHarness-main/skills/other/SKILL.md", body: "other", mode: 0o644},
 	})
 	client := archiveClient(archive)
 
@@ -125,7 +125,7 @@ func TestFetchIgnoresTopLevelArchiveMetadata(t *testing.T) {
 	t.Parallel()
 	archive := testArchive(t, []testFile{
 		{name: "pax_global_header", body: "github archive metadata", mode: 0o644},
-		{name: "Harn-main/skills/swe/SKILL.md", body: "skill", mode: 0o644},
+		{name: "ReedHarness-main/skills/swe/SKILL.md", body: "skill", mode: 0o644},
 	})
 
 	destination := t.TempDir()
@@ -173,7 +173,7 @@ func TestFetchSupportsRootlessArchive(t *testing.T) {
 func TestFetchSupportsSingleFileArchive(t *testing.T) {
 	t.Parallel()
 	archive := testArchive(t, []testFile{
-		{name: "README.md", body: "# Harn", mode: 0o644},
+		{name: "README.md", body: "# ReedHarness", mode: 0o644},
 	})
 
 	destination := t.TempDir()
@@ -185,7 +185,7 @@ func TestFetchSupportsSingleFileArchive(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(body) != "# Harn" {
+	if string(body) != "# ReedHarness" {
 		t.Fatalf("unexpected content %q", body)
 	}
 }
@@ -204,7 +204,7 @@ func TestFetchRejectsUnsafeArchivePath(t *testing.T) {
 func TestFetchRejectsSelectedSymlink(t *testing.T) {
 	t.Parallel()
 	archive := testArchive(t, []testFile{
-		{name: "Harn-main/skills/swe/link", linkname: "../../outside", mode: 0o777, typeflag: tar.TypeSymlink},
+		{name: "ReedHarness-main/skills/swe/link", linkname: "../../outside", mode: 0o777, typeflag: tar.TypeSymlink},
 	})
 	err := Fetch(context.Background(), archiveClient(archive), "https://example.test/archive.tar.gz", []string{"skills/swe"}, t.TempDir())
 	if err == nil || !strings.Contains(err.Error(), "not a regular file or directory") {
@@ -215,7 +215,7 @@ func TestFetchRejectsSelectedSymlink(t *testing.T) {
 func TestFetchReportsMissingTarget(t *testing.T) {
 	t.Parallel()
 	archive := testArchive(t, []testFile{
-		{name: "Harn-main/skills/swe/SKILL.md", body: "skill", mode: 0o644},
+		{name: "ReedHarness-main/skills/swe/SKILL.md", body: "skill", mode: 0o644},
 	})
 	err := Fetch(context.Background(), archiveClient(archive), "https://example.test/archive.tar.gz", []string{"skills/missing"}, t.TempDir())
 	if err == nil || !strings.Contains(err.Error(), "was not found") {
