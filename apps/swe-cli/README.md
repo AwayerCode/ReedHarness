@@ -1,8 +1,8 @@
 # SWE CLI
 
-固定地址、多项目实时服务使用 `swe-cli system-design serve --root <工作区> --expect-version <版本>`，浏览器访问 `http://127.0.0.1:47831/reed/`。DSH 使用同源固定路径代理，静态导出继续使用 `render`。详见[插件分发与架构服务](../../docs/plugin-distribution.md)。
+固定地址、多项目实时服务使用 `swe-cli system-design serve --root <工作区> --expect-version <版本>`，浏览器访问 `http://127.0.0.1:47831/reed/`。DSH 使用同源固定路径代理，静态导出继续使用 `render`。详见[应用设计](../../docs/app-design.md#架构展示服务)。
 
-[系统设计](../../docs/system-design.md)中的确定性校验核心。通用核心负责 YAML、目录、文件归属与模块关系；语言适配器负责解释源码中的导入或引用。Skill 保存方法与规范，业务测试和构建仍由 Agent 按项目约定调用。
+确定性校验核心，按[系统设计](../../docs/system-design.md)将在 P0 并入 `reed`。通用核心负责 YAML、目录、文件归属与模块关系；语言适配器负责解释源码中的导入或引用。Skill 保存方法与规范，业务测试和构建仍由 Agent 按项目约定调用。
 
 ## 检查能力
 
@@ -34,7 +34,7 @@ swe-cli scope check --root /absolute/project --baseline /tmp/new-baseline.json
 swe-cli scope readonly --root /absolute/project
 ```
 
-完整参数与边界见 [SWE CLI 入口](../../docs/cli.md)。readonly 的 sha256 字段含格式前缀，保存后原样传给 expected。旧脚本基线和指纹明确拒绝，不自动重建或迁移正在使用的基线。
+完整参数与边界见 [应用设计的检查命令](../../docs/app-design.md)。readonly 的 sha256 字段含格式前缀，保存后原样传给 expected。旧脚本基线和指纹明确拒绝，不自动重建或迁移正在使用的基线。
 
 ## JSON 协议
 
@@ -75,7 +75,7 @@ go generate ./...
 
 统一验证入口需要 Node.js 18+ 与 Python 3，依次执行两套 Go 模块的竞态测试与 vet、架构图交互逻辑测试、格式及文档检查、六平台构建、插件打包与 DSH 集成测试。缺少工具或任一检查失败均返回非零，不跳过交互测试；可用 `NODE_BINARY`、`PYTHON_BINARY` 指定开发工具路径。浏览器实际交互仍需人工或浏览器验收，Node 测试不替代该验证。
 
-Schema 从 CLI 自有的 `resources/artifact-schemas/` 与 `resources/system-design/schema.json` 生成并编入二进制；测试检查生成来源一致性、单个 Skill 的资源闭包（含 contract 引用不越出自身目录），以及 Skill 参考副本与 CLI 资源、`docs/cli.md` 的漂移。生成文件不可手改。
+Schema 从 CLI 自有的 `resources/artifact-schemas/` 与 `resources/system-design/schema.json` 生成并编入二进制；测试检查生成来源一致性、单个 Skill 的资源闭包（含 contract 引用不越出自身目录），以及 Skill 参考副本与 CLI 资源、`docs/app-design.md`、`docs/distribution-design.md` 中对应章节的漂移。生成文件不可手改。
 
 迁移用例保存在 internal/app/testdata，包含由旧 Python 检查器生成的 95 个正反例及预期退出码，执行不需要 Python。另有显式场景引用、权限、符号链接、子模块、基线保护、工具版本与摘要回归测试。独立二进制测试使用无语言运行时 PATH。
 

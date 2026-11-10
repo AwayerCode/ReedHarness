@@ -1,6 +1,6 @@
 # ReedHarness 协作约定
 
-本仓是 ReedHarness 的完整源码位置：`docs/` 保存系统设计与详细使用指南，根目录 `README.md` 保存项目介绍与快速开始，`CONTRIBUTING.md` 保存 Skill 维护与构建发布规则，`skills/` 保存可版本化的 Agent 能力，`apps/reed/` 保存临时 Skill 分发工具，测试与构建在本地执行，二进制手动发布到 GitHub Releases。业务项目只下载明确选择的资源，不复制整个仓库，CLI 独立安装到 PATH。
+本仓是 ReedHarness 的完整源码位置。ReedHarness 实现 Harness 的 Business 层：Loop 推进目标，Task 明确每次工作，Skill 提供完成能力，设计以 [系统设计](docs/system-design.md) 为权威依据。`docs/` 保存设计与参考，根目录 `README.md` 保存项目介绍与快速开始，`CONTRIBUTING.md` 保存 Skill 维护与构建发布规则，`skills/` 保存领域 Skill，`apps/` 保存 Go 程序。设计正在从旧方案迁移：`apps/swe-cli/` 的检查命令将在 P0 并入 `apps/reed/`，旧的 Skill 安装器随之删除。测试与构建在本地执行，二进制手动发布到 GitHub Releases。
 
 ## Skill 入口
 

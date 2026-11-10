@@ -255,15 +255,33 @@ func TestSkillSchemaCopiesMatchCLIResources(t *testing.T) {
 	}
 }
 
-// docs/cli.md is the single CLI reference; Skill copies differ only in two links.
+// Skill references retain the published CLI sections from both design documents.
 func TestSkillCLIReferencesMatchDocs(t *testing.T) {
-	document, err := os.ReadFile("../../../../docs/cli.md")
+	document, err := os.ReadFile("../../../../docs/app-design.md")
 	if err != nil {
 		t.Fatal(err)
 	}
+	distribution, err := os.ReadFile("../../../../docs/distribution-design.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	section := func(document, heading string) string {
+		t.Helper()
+		_, body, found := strings.Cut(document, "\n## "+heading+"\n\n")
+		if !found {
+			t.Fatalf("missing documented section %q", heading)
+		}
+		body, _, _ = strings.Cut(body, "\n## ")
+		return strings.TrimSpace(body)
+	}
+	reference := "# 领域 Skill 与 CLI 配套\n\n" + section(string(document), "检查职责") + "\n\n" +
+		"## 安装与版本\n\n" + section(string(distribution), "安装与版本") + "\n\n"
+	for _, heading := range []string{"选择检查", "命令入口", "范围与结果"} {
+		reference += "## " + heading + "\n\n" + section(string(document), heading) + "\n\n"
+	}
 	want := strings.NewReplacer(
 		"(../skills/swe-system-design/references/system-design/guide.md", "(system-design/guide.md",
-	).Replace(string(document))
+	).Replace(strings.TrimSpace(reference) + "\n")
 	copies, err := filepath.Glob("../../../../skills/*/references/cli.md")
 	if err != nil || len(copies) == 0 {
 		t.Fatal("missing Skill CLI references", err)
@@ -274,7 +292,7 @@ func TestSkillCLIReferencesMatchDocs(t *testing.T) {
 			t.Fatal(err)
 		}
 		if string(data) != want {
-			t.Errorf("%s differs from docs/cli.md; update the reference rather than the copy", copyPath)
+			t.Errorf("%s differs from the CLI sections in docs/app-design.md and docs/distribution-design.md", copyPath)
 		}
 	}
 }

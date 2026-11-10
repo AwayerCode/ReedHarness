@@ -19,7 +19,7 @@ func TestSkillCommandContracts(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	doc, err := os.ReadFile(filepath.Join(root, "docs/cli.md"))
+	doc, err := os.ReadFile(filepath.Join(root, "docs/app-design.md"))
 	if err != nil {
 		t.Fatal(err)
 	}

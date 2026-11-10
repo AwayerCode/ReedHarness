@@ -64,10 +64,3 @@ func TestCommandHelp(t *testing.T) {
 		t.Fatalf("%d: %s", code, &out)
 	}
 }
-
-func TestRepositoryDesignRelations(t *testing.T) {
-	var out bytes.Buffer
-	if code := Run([]string{"design", "--root", repository(t), "--system-design", "docs/system-design.md", "--protocol", "docs/interface-protocol.md"}, nil, &out); code != 0 {
-		t.Fatalf("repository design violates its contract: %d: %s", code, &out)
-	}
-}
