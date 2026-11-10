@@ -19,14 +19,14 @@ export function apply(ctx, config = {}) {
     const entry = readFileSync(join(skillRoot, "SKILL.md"), "utf8");
     const description = entry.match(/^description: (.+)$/m)?.[1];
     if (!description) throw new Error(`${name} Skill description missing`);
-    return { name, description, content: entry.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, "") + `\nCLI executable: ${join(packageRoot, "tools/reed/bin", process.platform === "win32" ? "reed.exe" : "reed")}\n`, source: "bundled", path: join(skillRoot, "SKILL.md"), resourceBase: { kind: "directory", path: skillRoot } };
+    return { name, description, content: entry.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, "") + `\nCLI executable: ${join(packageRoot, "tools/swe/bin", process.platform === "win32" ? "swe.exe" : "swe")}\n`, source: "bundled", path: join(skillRoot, "SKILL.md"), resourceBase: { kind: "directory", path: skillRoot } };
   });
   let starting;
   let child;
   let disposed = false;
   async function connect() {
     const root = await realpath(config.root || process.cwd());
-    const runtime = JSON.parse(await readFile(join(packageRoot, "tools/reed/runtime.json"), "utf8"));
+    const runtime = JSON.parse(await readFile(join(packageRoot, "tools/swe/runtime.json"), "utf8"));
     async function health() {
       const response = await fetch(origin + "/reed/health", { signal: AbortSignal.timeout(1500) });
       if (!response.ok) throw new Error("ReedHarness health request failed");
@@ -46,7 +46,7 @@ export function apply(ctx, config = {}) {
       }
     }
     if (disposed) throw new Error("ReedHarness plugin disposed");
-    const binary = join(packageRoot, "tools/reed/bin", process.platform === "win32" ? "reed.exe" : "reed");
+    const binary = join(packageRoot, "tools/swe/bin", process.platform === "win32" ? "swe.exe" : "swe");
     child = spawn(binary, ["system-design", "serve", "--root", root, "--expect-version", runtime.version, "--parent-stdin"], { stdio: ["pipe", "pipe", "pipe"] });
     await new Promise((resolve, reject) => {
       let output = "";

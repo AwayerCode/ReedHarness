@@ -6,7 +6,7 @@ import { dirname, join } from "node:path";
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const version = process.argv[2];
 if (!/^\d+\.\d+\.\d+(?:-[\w.-]+)?$/.test(version)) throw new Error("plugin version must be SemVer without v prefix");
-const dist = join(root, "apps/reed/dist");
+const dist = join(root, "apps/swe/dist");
 const staging = await mkdtemp(join(dist, ".plugin-build-"));
 const packages = join(staging, "packages");
 const platforms = ["darwin_amd64", "darwin_arm64", "linux_amd64", "linux_arm64", "windows_amd64", "windows_arm64"];
@@ -20,7 +20,7 @@ async function addCLIInstructions(target) {
   for (const name of skillNames) {
     const entry = join(target, "skills", name, "SKILL.md");
     const content = await readFile(entry, "utf8");
-    await writeFile(entry, content + "\n## 插件宿主 CLI 定位\n\n本插件附带独立 CLI。将当前 Skill 目录下 `../../tools/reed/bin` 的绝对路径加入命令环境 PATH 后执行 `reed`；也可直接执行该目录中的 `reed`（Windows 为 `reed.exe`）。保留工具目录相邻的 `runtime.json`。\n");
+    await writeFile(entry, content + "\n## 插件宿主 CLI 定位\n\n本插件附带独立 CLI。将当前 Skill 目录下 `../../tools/swe/bin` 的绝对路径加入命令环境 PATH 后执行 `swe`；也可直接执行该目录中的 `swe`（Windows 为 `swe.exe`）。保留工具目录相邻的 `runtime.json`。\n");
   }
 }
 try {
@@ -29,7 +29,7 @@ for (const platform of platforms) {
   await mkdir(target, { recursive: true });
   await cp(join(root, "plugins/dsh"), target, { recursive: true });
   await mkdir(join(target, "tools"), { recursive: true });
-  execFileSync("tar", ["-xzf", join(dist, `reed_${platform}.tar.gz`), "-C", join(target, "tools")]);
+  execFileSync("tar", ["-xzf", join(dist, `swe_${platform}.tar.gz`), "-C", join(target, "tools")]);
   for (const name of skillNames) execFileSync("tar", ["-xzf", join(dist, `${name}.tar.gz`), "-C", target]);
   await addCLIInstructions(target);
 
@@ -48,9 +48,9 @@ for (const platform of platforms) {
   optionalDependencies[name] = version;
   const native = join(packages, name);
   await mkdir(native, { recursive: true });
-  const binary = platform.startsWith("windows") ? "reed.exe" : "reed";
-  await cp(join(target, "tools/reed/bin", binary), join(native, binary));
-  await cp(join(target, "tools/reed/runtime.json"), join(native, "runtime.json"));
+  const binary = platform.startsWith("windows") ? "swe.exe" : "swe";
+  await cp(join(target, "tools/swe/bin", binary), join(native, binary));
+  await cp(join(target, "tools/swe/runtime.json"), join(native, "runtime.json"));
   await writeFile(join(native, "package.json"), JSON.stringify({ name, version, os: pkg.os, cpu: pkg.cpu, files: [binary, "runtime.json"] }, null, 2) + "\n");
 }
 const npmRoot = join(packages, "dsh-reed");

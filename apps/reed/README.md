@@ -1,104 +1,157 @@
-# reed 应用
+# reed 管理与调度服务
 
-固定地址、多项目实时服务使用 `reed system-design serve --root <工作区> --expect-version <版本>`，浏览器访问 `http://127.0.0.1:47831/reed/`。DSH 使用同源固定路径代理，静态导出继续使用 `render`。详见[应用设计](../../docs/app-design.md#架构展示服务)。
+reed 提供 Business Harness 管理入口；专业检查与架构渲染调用独立 swe。目标和任务的权威来源仍是 GitHub Project 与 Issue，本地只保存调度与恢复记录。
 
-统一应用入口，当前提供确定性校验、架构服务与内嵌 Skill，调度能力按[系统设计](../../docs/system-design.md)在 P1 建设。通用核心负责 YAML、目录、文件归属与模块关系；语言适配器负责解释源码中的导入或引用。Skill 保存方法与规范，业务测试和构建仍由 Agent 按项目约定调用。
+## 启动
 
-## 检查能力
-
-| 入口 | 覆盖 |
-| --- | --- |
-| documents | 五类文档格式、表格、枚举、本地链接与 architecture 局部模式 |
-| design | 模块依赖、协议索引与定义、所有权、代码映射及双向文档引用 |
-| artifacts | UI 与协议、风险与场景的显式对应关系 |
-| structure | 设计声明的代码位置、入口文件和范围映射 |
-| scope snapshot/check/readonly | 可写范围基线、工作区变更和只读指纹，含子模块 |
-
-检查不判断任务整体完成，不替代人工语义审查。`system-design check` 可以通过语言适配器检查已支持的源码依赖；其他入口不解析源码依赖。结果保留已检查证据和未覆盖项。只有 scope snapshot 创建全新的项目外基线；其他检查不写项目。
-
-## YAML 模块架构
-
-新增 `system-design list/validate/check/render/preview` 入口，执行结构化设计校验、语言无关的目录与文件归属检查，并生成可展开、可追踪依赖的只读 HTML。`check` 按检测到的源码调用内置 Go、TypeScript 或 C++ 适配器；其他语言在结构检查后明确列为源码依赖未验证。采用规则、限制与示例见 [YAML 模块架构](../../skills/swe-system-design/references/system-design/guide.md)。`validate --profile layers` 用于层设计交接，完整验收要求存在模块；该入口不并入 JSON 协议版本 2。
-
-受控查看使用 `reed system-design preview --file /absolute/project/system-design.yaml --expect-version <固定版本>`。命令验证版本和 YAML 后输出本机 URL，默认打开系统浏览器，使用 `--no-open` 可由宿主自行展示。服务持续前台运行，Ctrl-C 或终止进程时停止；重复启动同一 YAML 和同一 CLI 构建会复用服务并退出新命令。页面每秒检查 YAML 并自动更新；校验失败或连接中断时遮罩标注旧图已过期或可能过期，修复后自动恢复。不接受磁盘 HTML，不输出中间页面文件。`render` 仅用于离线导出。版本声明不能替代安装包和运行权限保护。
-
-## 使用
+需要 Go 1.24+ 构建。运行二进制不需要 Go 或 Node；GitHub 接入需要已登录的 `gh`，架构展示需要独立安装的 `swe`。不配置 GitHub 或 Agent 仍可查看 Skill、运行页与系统设计；相关操作会明确报告尚未配置。
 
 ```bash
-reed documents --root /absolute/project --kind system-design --file docs/system-design.md
-reed design --root /absolute/project --system-design docs/system-design.md --interface-protocol docs/interface-protocol.md
-reed artifacts --root /absolute/project --kind test --file docs/test-design.md
-reed structure --root /absolute/project --design docs/system-design.md --scope src
-reed scope snapshot --root /absolute/project --baseline /tmp/new-baseline.json --allow-dir src
-reed scope check --root /absolute/project --baseline /tmp/new-baseline.json
-reed scope readonly --root /absolute/project
+apps/reed/scripts/build-release.sh 0.6.0
+# 解压适合本机的 reed_<os>_<arch>.tar.gz，将 reed/bin 加入 PATH。
+reed version
+reed serve --config /absolute/reed-config.json
 ```
 
-完整参数与边界见 [应用设计的检查命令](../../docs/app-design.md)。readonly 的 sha256 字段含格式前缀，保存后原样传给 expected。旧脚本基线和指纹明确拒绝，不自动重建或迁移正在使用的基线。
-
-## JSON 协议
-
-普通检查支持 `reed check --request <file|-> --format json`。协议版本 2，旧扩展字段拒绝。退出码 0 为全部必需检查通过，1 为违规，2 为不可检查；不可检查优先，所有诊断仍保留。至少包含一个必需检查，同一请求不能重复 checkId。
+默认访问 `http://127.0.0.1:47832/`。配置文件不提交到业务仓库，以下路径均为示例，改成实际本地路径：
 
 ```json
 {
-  "protocolVersion": 2,
-  "taskId": "document-check",
-  "round": 1,
-  "mode": "review",
-  "projectRoot": "/absolute/project",
-  "checks": [
-    {
-      "checkId": "design",
-      "required": true,
-      "input": {
-        "systemDesign": "docs/system-design.md",
-        "protocol": "docs/interface-protocol.md"
-      }
-    }
-  ]
+  "root": "/absolute/workspace",
+  "state_dir": "/absolute/reed-state",
+  "skills_dir": "/absolute/ReedHarness/skills",
+  "skill_version": "selected-commit-or-release",
+  "swe": "/absolute/tools/swe",
+  "swe_version": "0.6.0",
+  "gh": "gh",
+  "repository": "owner/repository",
+  "project_owner": "owner",
+  "project_number": 1,
+  "allow_github_write": false,
+  "agent_backend": "codex",
+  "codex": "codex",
+  "check_commands": {
+    "architecture": ["/absolute/tools/swe", "system-design", "check", "--root", "{workspace}", "--all"],
+    "tests": ["go", "test", "./..."],
+    "effect": ["/absolute/measure-effect"]
+  },
+  "allowed_paths": ["src"],
+  "max_runs": 20,
+  "run_timeout_seconds": 300,
+  "interval_seconds": 0
 }
 ```
 
-各 input 字段：documents 使用 kind/file/profile；design 使用 systemDesign/protocol；artifacts 使用 kind/file/protocol；structure 使用 design/scopes。范围操作独立于 check，因为 snapshot 有明确写入副作用。
+`root` 和 `state_dir` 必填；其余可以省略。路径相对服务启动目录解释。`interval_seconds: 0` 禁用周期触发，大于零时产生目标评价事件。`max_runs` 是该运行目录累计事件预算，不是 token 或费用预算。配置变更使用新的运行目录，旧目录保留审计；不能通过复用旧授权运行新项目。
 
-结果包含 runId、核心版本、规则与输入摘要，并复核观察到的文件变化。不是文件系统原子快照。scope 另使用版本化 Git 工作区清单与摘要。
+目标页确认 Project 的 ID、标题和 README 摘要及其中的授权契约后才能调度 GitHub 目标。定义变化使旧确认失效；任务必须属于配置的 Project 和仓库。`allow_github_write` 控制页面编辑已有目标、任务，默认关闭；不授权 Agent 直接写 GitHub；自动业务推进也由该配置开关授权。超过 1000 个 Project 条目会明确拒绝不完整观察。
 
-## 开发与构建
+无 GitHub 配置时可用显式事件输入进行本地协议测试；这不构成真实目标效果验收。使用 `agent_backend: "codex"` 选择内置适配器；自定义宿主使用 `agent_command` 数组，两者不能同时配置。不能把 Codex 原生命令填入自定义协议入口。
 
-需要 Go 1.24+；Git 用于范围检查。运行普通文档关系检查不需要 Git。二进制不依赖 Python、Node 或 Go 运行环境，YAML 与 JSON Schema 库编入二进制，无额外运行时依赖。
+## 目标与任务契约
 
-```bash
-go generate ./...
-scripts/verify.sh
+目标 README 保留业务叙述、基线、效果标准和停止条件，并包含一个 JSON 授权块。下面示例中的检查名称对应服务配置的 `check_commands`；命令由人固定，Agent 只能引用名称，不能传入任意命令。
+
+````markdown
+```reed-goal
+{
+  "allowed_paths": ["src"],
+  "checks": ["architecture", "tests"],
+  "effect_checks": ["effect"],
+  "max_runs": 20,
+  "timeout_seconds": 300
+}
+```
+````
+
+目标的路径、预算不得超过服务配置；任务必须包含目标要求的检查，不能增加未授权检查。`effect_checks` 必须重新采集实际效果，例如部署后指标或用户行为变化，不能只是重命名任务测试。检查命令在工作区执行，参数 `{workspace}` 替换为本次绝对路径；检查和交付命令是由人授权的可信程序，不在 Agent 沙箱中执行。它们须自行管理依赖、凭据、缓存和副作用。
+
+任务 Issue 正文包含一个 `reed-task` JSON 块，字段为 title、body、acceptance、allowed_paths、checks、skills。Agent 的任务提案经服务校验后生成该块。acceptance 为非空验收条件数组，allowed_paths 必须是目标路径子集，skills 引用配置来源中的名称；任务运行只装载选中的 Skill。
+
+工作开始前源 Git 工作区必须干净；服务在 state_dir 下创建独立克隆，保留交付。Codex 当前要求可写项是已存在的目录；不能表达的权限直接拒绝。项目根目录和运行目录须分开。任务执行后不能修改原始验收定义，变更要求用新任务表达。
+
+合并、部署不是默认动作。要求这些交付时，将其写入验收并配置明确授权的交付检查命令；未满足时不能完成任务。
+
+## 内置 Codex 接入
+
+使用本机已认证的 Codex CLI，当前验证接口依据 `codex-cli 0.167.0`。每次调用新建非交互会话，忽略用户配置、项目启动目录和 execpolicy 规则；临时启动目录与任务工作区分离。执行使用 workspace-write 沙箱，只追加任务授权目录；规划、审查与评价使用 read-only。禁用审批提权、工具网络、自动临时目录写权限，并从 JSONL 的 thread.started 读取宿主会话身份，不能由模型自报身份替代。
+
+服务不会继承全局 MCP、插件或宽权限设置。使用本机自定义模型接入地址时，在服务配置中显式指定 `codex_model` 和 `codex_base_url`；不通过重新加载全局配置恢复连接，也不把带凭据的地址提交到源码。账号认证仍由 Codex 管理；服务不保存 API Key。若安装版本不支持这些参数、沙箱不可用或模型连接失败，运行失败并保留诊断，不退回无沙箱模式。官方接口依据：[非交互模式](https://developers.openai.com/codex/noninteractive/)和[配置参考](https://developers.openai.com/codex/config-reference/)。
+
+## Agent 宿主协议
+
+服务执行 `agent_command` 数组，不经过 shell。先附加 `--capabilities` 读取：
+
+```json
+{"protocol":"reed-agent-v1","enforces_scope":true}
 ```
 
-统一验证入口需要 Go、Git 和 Node.js 18+，依次执行 reed 的竞态测试与 vet、架构图交互逻辑测试、Go 格式与脚本语法检查、六平台构建、插件打包与 DSH 集成测试。缺少工具或任一检查失败均返回非零，不跳过交互测试；可用 `NODE_BINARY` 指定开发工具路径。浏览器实际交互仍需人工或浏览器验收，Node 测试不替代该验证。
+能力声明来自可信宿主适配器，不能证明其实现了隔离。宿主必须落实 `allowed_paths`、`read_only`、独立会话、运行时限与子进程关闭；无法落实时拒绝执行。服务不自建沙箱；自定义适配器必须是可信的宿主实现，不能把普通脚本返回 true 当作隔离证明。
 
-Schema 从 CLI 自有的 `resources/artifact-schemas/` 与 `resources/system-design/schema.json` 生成并编入二进制；测试检查生成来源一致性、单个 Skill 的资源闭包（含 contract 引用不越出自身目录），以及 Skill 参考副本与 CLI 资源、`docs/app-design.md`、`docs/distribution-design.md` 中对应章节的漂移。生成文件不可手改。
+正常调用从标准输入读取单个 JSON 对象：
 
-迁移用例保存在 internal/app/testdata，包含由旧 Python 检查器生成的 95 个正反例及预期退出码，执行不需要 Python。另有显式场景引用、权限、符号链接、子模块、基线保护、工具版本与摘要回归测试。独立二进制测试使用无语言运行时 PATH。
+```json
+{
+  "protocol": "reed-agent-v1",
+  "event": {"id":"delivery:1","kind":"review","issue":1,"input":"根据原始验收条件审查"},
+  "goal": {},
+  "task": {},
+  "history": [],
+  "root": "/absolute/workspace",
+  "allowed_paths": ["src"],
+  "skills": [],
+  "swe": "/absolute/tools/swe",
+  "timeout_seconds": 300,
+  "fresh_session": true,
+  "read_only": true,
+  "github_write": false
+}
+```
 
-## 内部职责
+`goal/task` 是当前 GitHub 观察；本地模式为 null。`skills` 包含名称、来源、版本与 SKILL.md 内容；其余资源从对应来源读取。每次调用使用新会话；只有 execute 请求允许写入配置范围，plan/review/evaluate 为只读。任务文本和 Agent 输出不能扩大这些权限。stdout 只返回 JSON，日志写 stderr，两通道各限 8 MiB。
 
-命令参数与输出协议保留在 `internal/app`：`app.go` 只分派命令，`check_command.go` 解析请求，`check_execution.go` 执行检查并归并结果，`protocol.go` 维护协议与请求校验。`internal/workspace/observer.go` 负责文件读取和输入稳定性观察，规则包通过读取接口使用它。
+```json
+{
+  "protocol": "reed-agent-v1",
+  "status": "continue",
+  "summary": "交付已通过独立审查，等待效果评价",
+  "evidence": ["检查报告或实际效果证据位置"],
+  "session": "unique-host-session-id",
+  "next": {"kind":"evaluate","issue":1,"input":"重新采集目标效果"}
+}
+```
 
-`internal/systemdesign/execution.go` 组织单份设计的校验、实现检查或渲染；`source_structure.go` 先完成语言无关的必需路径、文件类型、目录归属与文件归属检查；`implementation.go` 再按文件类型选择 Go、TypeScript 或 C++ 适配器。适配器只提取引用并映射目标文件，模块关闭与允许依赖由共享核心统一裁决。`CheckGo` 保留为显式 Go 分析入口。适配器不能改变 YAML 结构规则或允许依赖语义。
+`status` 为 continue、wait、needs_input 或 done。continue 必须附下一事件；新任务创建后由服务绑定返回的 Issue。跨任务调度必须重新读取 Project 成员和授权契约，服务生成后续事件标识。wait 等待下一次事件或定时器；needs_input 暂停；done 仅允许 evaluate 且必须有证据和本轮重新采集并通过的效果检查。review 必须返回未在历史中出现过的会话标识，以及 pass、fail 或 blocked verdict；验收通过、返工和受阻由服务据此处理。服务校验协议和身份，证据的语义与实际效果仍由具体场景验证，不能用“测试通过”替代目标效果。
 
-架构图由 `diagram_model.go` 定义视图数据，`diagram_order.go` 调整模块顺序，`diagram_layout.go` 计算节点几何，`diagram_routes.go` 生成连线路径，`html.go` 将结果交给内嵌 HTML 模板。布局与路由不读取文件或操作浏览器，模板不承担设计规则。
+## 调度与恢复
 
-## 配套分发
+页面或本机调用者通过 `/api/event` 提交事件。先 GET `/api/state` 获取管理令牌，POST 使用 `X-Reed-Token` 和 `Content-Type: application/json`。这是本地同源防护，不是远程认证接口。
 
-`scripts/build-release.sh <版本>` 构建 macOS、Linux、Windows 的 amd64/arm64 CLI，在 `dist/` 生成六个 `reed_<系统>_<架构>.tar.gz`，并为每个 Skill 生成独立的 `<skill-name>.tar.gz`。Skill 包只有自身资源，不携带二进制，也不依赖其他 Skill。CLI 包与 Skill 包各自独立下载，版本由同一次发行标签标识。
+```json
+{"id":"issue-1-updated-v2","kind":"execute","issue":1,"input":"本次明确任务输入"}
+```
 
-CLI 包包含 `reed/bin/reed`（Windows 为 `.exe`）及 `reed/runtime.json`。清单包含 schema_version、工具名称、版本和本平台 SHA256，不包含 URL。保留包目录结构，将其 bin 目录加入 PATH 后即可调用 `reed`；运行时核对工具版本和自身摘要。
+相同 ID 去重，同一任务已排队或运行时拒绝重复。单实例串行处理；结果和后续事件原子持久化。暂停不取消当前工作，停止取消当前宿主命令与排队工作，已发生的外部副作用不会自动撤销。服务取消 Unix 进程组，Windows 请求终止进程树；第三方宿主的远程任务仍须由适配器负责停止。
 
-`../reed/scripts/build-release.sh <版本>` 将 reed 二进制、独立 CLI 包、独立 Skill 包及统一 SHA256SUMS 写入 ReedHarness 发行目录。共用 Release 是发布便利，不构成 Skill 之间的依赖。打包不修改源码或自动执行 go generate。
+重启或启动后的未知结果标记 interrupted，不能直接恢复；核对宿主已停止、工作区和远端副作用后，在运行页提交证据，再恢复后续调度。不会自动重跑中断事件。异常退出残留 `service.lock` 时，先核对旧服务与宿主均已停止，再删除锁；不可直接启动第二个写入者。
 
-reed 只安装用户明确选择的 Skill，不安装兄弟 Skill，也不解析运行时清单或自动下载 CLI。已有目录拒绝覆盖，换版先安装到临时项目并对比，再显式替换。CLI 独立升级。
+GitHub 同步前保存 publication；失败显示 sync_failed。运行页可“核对远端并重试同步”，服务先按操作标记查找已写入结果，只补同步、不重跑 Agent。若查询不到上次非幂等写入，服务仍不自动重发；用户核对远端确认未写入后，填写证据再授权重试。目标评价保存在 Project 草稿条目，目标 README 不受结果回写修改。
 
-包内容与安装行为有本地测试；远端安装需先发布对应资源。六平台构建不等于实机运行验证，当前实际运行覆盖 macOS arm64；最低系统版本仍需发行验收。
+运行记录为本地 JSON，当前不提供跨版本自动迁移。已停止或达成的运行不可恢复；新授权使用新配置目录。
 
-## 内嵌 Skill
+## 验证与边界
 
-`reed skills list` 列出编译的 Skill；`reed skills read swe-system-design` 读取入口，追加 `references/cli.md` 可读取对应资源。修改仓库 `skills/` 后执行 `go generate ./...`，生成文件由测试与源码逐文件核对，禁止手改。运行时无需安装器或磁盘 Skill 目录。
+```bash
+apps/reed/scripts/verify.sh
+apps/swe/scripts/verify.sh
+```
+
+reed 验证覆盖事件、定时、去重、预算、暂停停止、重启核对、目标变更、会话与 HTTP 边界，并构建六平台服务。swe 单独验证专业能力、架构交互、分发与 DSH 插件。交叉构建不替代目标平台运行。
+
+本地端到端验收使用真实临时 Git 仓库、检查与 GitHub/Agent 替身，覆盖完整业务状态和故障恢复。真实 Codex 接入可额外执行：
+
+```bash
+REED_CODEX_SMOKE=1 go -C apps/reed test ./internal/control -run 'TestCodexLive(Smoke|Scope|BusinessLoop)'  -v -count=1
+```
+
+该命令会使用已认证的 Codex 账号进行只读协议、临时目录沙箱边界和完整业务闭环测试，不写 GitHub。BusinessLoop 使用真实 Codex 规划、执行、独立审查和评价，在真实临时 Git 克隆中交付文件并重新测量结果，仅 GitHub 传输使用替身。自定义接入地址可通过测试环境变量 `REED_CODEX_MODEL`、`REED_CODEX_BASE_URL` 传入。真实账号、GitHub 权限、Windows 运行与实际业务效果需要单独核对；不能用交叉构建或替身测试代替。

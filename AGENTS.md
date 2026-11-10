@@ -1,6 +1,6 @@
 # ReedHarness 协作约定
 
-本仓是 ReedHarness 的完整源码位置。ReedHarness 实现 Harness 的 Business 层：Loop 推进目标，Task 明确每次工作，Skill 提供完成能力，设计以 [系统设计](docs/system-design.md) 为权威依据。`docs/` 保存设计与参考，根目录 `README.md` 保存项目介绍与快速开始，`CONTRIBUTING.md` 保存 Skill 维护与构建发布规则，`skills/` 保存领域 Skill，`apps/` 保存 Go 程序。`apps/reed/` 是唯一 Go 应用，内嵌 Skill 并提供检查与架构服务；事件与定时调度按 P1 建设，旧 Skill 安装器已删除。测试与构建在本地执行，二进制手动发布到 GitHub Releases。
+本仓是 ReedHarness 的完整源码位置。ReedHarness 实现 Harness 的 Business 层：Loop 推进目标，Task 明确每次工作，Skill 提供完成能力，设计以 [系统设计](docs/system-design.md) 为权威依据。`docs/` 保存设计与参考，根目录 `README.md` 保存项目介绍与快速开始，`CONTRIBUTING.md` 保存 Skill 维护与构建发布规则，`skills/` 保存领域 Skill，`apps/` 保存 Go 程序。`apps/reed/` 保存管理调度服务，`apps/swe/` 保存独立专业 CLI；Skill 按来源加载，不编入程序。旧安装器已删除。测试与构建在本地执行，二进制手动发布到 GitHub Releases。
 
 ## Skill 入口
 
@@ -25,7 +25,7 @@
 
 ## 本地验证
 
-统一入口为 `apps/reed/scripts/verify.sh`，包含下列 Go 检查、架构图 JavaScript 交互测试、脚本语法、六平台构建，以及插件打包与 DSH 集成测试；任一步失败立即退出。构建、打包和插件使用同一个版本值。开发验证需要 Node.js 18+，发布二进制不依赖 Node.js。
+分别运行 `apps/reed/scripts/verify.sh` 和 `apps/swe/scripts/verify.sh`，覆盖各自 Go 检查、脚本语法和六平台构建；SWE 验证另含架构图交互测试、插件打包与 DSH 集成测试；任一步失败立即退出。构建、打包和插件使用同一个版本值。开发验证需要 Node.js 18+，发布二进制不依赖 Node.js。
 
 命令从仓库根目录执行。修改 Go 代码后检查格式、运行测试与竞态检测、执行 vet，并构建六平台产物：
 
@@ -34,21 +34,24 @@ find apps/reed -name '*.go' -type f -print0 | xargs -0 gofmt -l
 (cd apps/reed && go test -race ./...)
 (cd apps/reed && go vet ./...)
 apps/reed/scripts/build-release.sh
+find apps/swe -name '*.go' -type f -print0 | xargs -0 gofmt -l
+(cd apps/swe && go test -race ./...)
+(cd apps/swe && go vet ./...)
+apps/swe/scripts/build-release.sh
 ```
 
-`gofmt -l` 应无输出。构建产物位于 `apps/reed/dist/`，不提交。发行目录含六平台独立 `reed_<os>_<arch>.tar.gz`、独立纯文本 `<skill-name>.tar.gz` 和摘要；Skill 不带二进制。交叉编译不代替 Windows 实际运行验证；在 Windows 上进入 `apps/reed` 执行 `go test -race ./...` 和 `go vet ./...`。
+`gofmt -l` 应无输出。构建产物位于 `apps/reed/dist/` 和 `apps/swe/dist/`，不提交。发行目录含六平台独立 `reed_<os>_<arch>.tar.gz`、`swe_<os>_<arch>.tar.gz`、独立纯文本 `<skill-name>.tar.gz` 和摘要；Skill 不带二进制。交叉编译不代替 Windows 实际运行验证；在 Windows 上分别进入 `apps/reed` 和 `apps/swe` 执行 `go test -race ./...` 和 `go vet ./...`。
 
-修改 Skill 后先重新生成内嵌资源，再按涉及范围运行：
+修改 Skill 后按涉及范围运行：
 
 ```bash
-(cd apps/reed && go generate ./...)
-(cd apps/reed && go test ./internal/skills ./internal/checks ./internal/app ./internal/workspace)
+(cd apps/swe && go test ./internal/checks ./internal/app ./internal/workspace)
 ```
 
 修改安装或构建脚本时运行：
 
 ```bash
-bash -n apps/reed/scripts/build-release.sh plugins/build.sh apps/reed/scripts/verify.sh
+bash -n apps/reed/scripts/*.sh apps/swe/scripts/*.sh plugins/build.sh
 ```
 
 修改文档后运行：

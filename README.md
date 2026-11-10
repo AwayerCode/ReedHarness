@@ -4,15 +4,17 @@
 
 ReedHarness 实现 Harness 的 Business 层。目标放在 GitHub Project，任务放在 Issue。人确定目标、评价依据、授权与预算；事件或定时触发 Loop，Agent 做规划、执行和效果评价，`reed` 负责调度与约束，按当前状态推进工作。
 
-模型调用与 Agent 循环使用 Codex、Claude Code、pi 等现成 Agent；`reed` 负责调度、约束、运行记录与检查等确定性部分。SWE 是首个验证领域，六个 `swe-*` Skill 提供业务建模、系统设计、实现、测试、交付与接入的专业方法。
+模型调用与 Agent 循环使用 Codex、Claude Code、pi 等现成 Agent；`reed` 负责管理、调度、约束与运行记录，专业检查由 `swe` 提供。SWE 是首个验证领域，六个 `swe-*` Skill 提供业务建模、系统设计、实现、测试、交付与接入的专业方法。
 
 ## 当前状态
 
-设计已按新的 Harness 定义重做，见[系统设计](docs/system-design.md)。P0 已统一程序入口，GitHub 接入与事件、定时驱动的 Loop 留待 P1。当前可用的是：
+源码已拆分，见[系统设计](docs/system-design.md)：
 
-- 六个自包含的 SWE Skill，位于 `skills/`，并编译进 `reed`；通过 `reed skills list/read` 读取。
-- 确定性检查命令：YAML 架构、文档、产物关系、目录结构与改动范围，统一命令名为 `reed`。
-- 插件验证包与本地架构服务，见[分发设计](docs/distribution-design.md)。
+- `reed`：管理服务，提供 GitHub 目标和任务入口、Skill 来源、运行记录、事件与定时调度基础。
+- `swe`：独立专业检查 CLI 与架构服务，不需要启动 reed。
+- 六个独立 SWE Skill 与宿主插件；Skill 不再编入二进制。
+
+管理服务启动与 Agent 宿主协议见 [reed 使用说明](apps/reed/README.md)。内置 Codex 接入，支持自动任务创建、隔离执行、检查与独立审查、GitHub 回写和目标效果重新采集。外部账号和真实业务效果需要在实际接入时验收。
 
 已发布的 `v0.3.0` 是旧的平台 Skill 包，不对应本设计。
 
@@ -48,8 +50,8 @@ modules:
 独立安装 CLI 并加入 PATH 后，在项目根目录执行：
 
 ```bash
-reed system-design validate --file system-design.yaml
-reed system-design check --file system-design.yaml
+swe system-design validate --file system-design.yaml
+swe system-design check --file system-design.yaml
 ```
 
 例如项目的 Go module 为 `example.com/shop`，若支付模块导入 `example.com/shop/src/application/orders`，`check` 会报告未允许的模块依赖及文件、行号，并以退出码 `1` 结束。退出码 `0` 表示本次范围通过，`2` 表示无法检查；结果为 JSON。
@@ -68,22 +70,22 @@ reed system-design check --file system-design.yaml
 
 ## 快速开始
 
-快速开始只覆盖当前可用的检查命令与 Skill，目标与 Loop 实现后改写。已发布的 `v0.3.0` 不能用于验证本文流程；以下使用本地构建的独立 CLI 与所选 Skill 包，在临时项目中体验，不依赖尚未发布的远端包。需要 Go 1.24+、Bash 和 tar；命令适用于 macOS / Linux。
+以下先演示独立检查与 Skill；管理服务使用另一套配置和启动入口。已发布的 `v0.3.0` 不能用于验证本文流程；以下使用本地构建的独立 CLI 与所选 Skill 包，在临时项目中体验，不依赖尚未发布的远端包。需要 Go 1.24+、Bash 和 tar；命令适用于 macOS / Linux。
 
 ### 准备 CLI 与 Skill
 
 在本仓库根目录执行，构建六平台 CLI 和独立 Skill 文本包，并选择本机 CLI：
 
 ```bash
-apps/reed/scripts/build-release.sh
-reed_package="$PWD/apps/reed/dist/reed_$(go env GOOS)_$(go env GOARCH).tar.gz"
+apps/swe/scripts/build-release.sh
+reed_package="$PWD/apps/swe/dist/swe_$(go env GOOS)_$(go env GOARCH).tar.gz"
 reed_tools="$(mktemp -d)"
 tar -xzf "$reed_package" -C "$reed_tools"
-export PATH="$reed_tools/reed/bin:$PATH"
-reed version
+export PATH="$reed_tools/swe/bin:$PATH"
+swe version
 reed_demo="$(mktemp -d)"
 mkdir -p "$reed_demo/.agents"
-tar -xzf apps/reed/dist/swe-implementation.tar.gz -C "$reed_demo/.agents"
+tar -xzf apps/swe/dist/swe-implementation.tar.gz -C "$reed_demo/.agents"
 cd "$reed_demo"
 ```
 
@@ -113,7 +115,7 @@ printf 'package payments\n' > src/application/payments/service.go
 ## 文档与贡献
 
 - [系统设计](docs/system-design.md)：定位、核心概念、硬规则、reed 职责与实施阶段。
-- [应用设计](docs/app-design.md)：`reed` 模块、调度、接入、检查协议与架构服务。
+- [应用设计](docs/app-design.md)：`reed` 服务与 `swe` CLI、调度、接入、检查协议与架构服务。
 - [分发设计](docs/distribution-design.md)：二进制、Skill 与插件的构建、安装、更新与卸载。
 - [贡献指南](CONTRIBUTING.md)：Skill 维护、构建与发布；本地验证遵循 [AGENTS.md](AGENTS.md#本地验证)。
 
