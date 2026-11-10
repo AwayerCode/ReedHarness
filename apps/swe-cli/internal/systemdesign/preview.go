@@ -66,11 +66,15 @@ func (p *Preview) File() string { return p.file }
 // Every valid request gets a fresh scope and one read of the YAML input. Errors
 // replace the document; no prior successful page is retained or served on failure.
 func (p *Preview) Handler(host string) http.Handler {
+	return p.handler(host, "'none'")
+}
+
+func (p *Preview) handler(host, ancestors string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "no-referrer")
-		w.Header().Set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; base-uri 'none'")
+		w.Header().Set("Content-Security-Policy", "default-src 'none'; frame-ancestors "+ancestors+"; base-uri 'none'")
 		if r.Host != host {
 			http.Error(w, "invalid preview host", http.StatusForbidden)
 			return
@@ -108,7 +112,7 @@ func (p *Preview) Handler(host string) http.Handler {
 		}
 		html = liveDocument(html)
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Header().Set("Content-Security-Policy", previewCSP(html))
+		w.Header().Set("Content-Security-Policy", strings.Replace(previewCSP(html), "frame-ancestors 'none'", "frame-ancestors "+ancestors, 1))
 		if r.Method == http.MethodGet {
 			_, _ = w.Write(html)
 		}
@@ -245,7 +249,9 @@ const liveScript = `<script type="application/javascript">
   }
   async function check() {
     try {
-      const response = await fetch(new URL("state", location.href), {cache:"no-store", signal:AbortSignal.timeout(60000)});
+      const stateURL = new URL("state", location.href);
+      stateURL.search = new URL(location.href).search;
+      const response = await fetch(stateURL, {cache:"no-store", signal:AbortSignal.timeout(60000)});
       if (!response.ok) throw new Error("HTTP " + response.status);
       const state = await response.json();
       if (!state.valid) {

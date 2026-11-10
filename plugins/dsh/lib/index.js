@@ -1,0 +1,102 @@
+import { spawn } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { readFile, realpath } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+export const name = "harn";
+export const inject = ["webServer", "skills"];
+const origin = "http://127.0.0.1:47831";
+const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)));
+const routes = ["/harn/", "/harn/health", "/harn/resolve", "/harn/view", "/harn/state"];
+
+export function apply(ctx, config = {}) {
+  const skillRoot = join(packageRoot, "skills/swe");
+  const entry = readFileSync(join(skillRoot, "SKILL.md"), "utf8");
+  const description = entry.match(/^description: (.+)$/m)?.[1];
+  if (!description) throw new Error("SWE Skill description missing");
+  let starting;
+  let child;
+  let disposed = false;
+  async function connect() {
+    const root = await realpath(config.root || process.cwd());
+    const runtime = JSON.parse(await readFile(join(packageRoot, "skills/swe/runtime.json"), "utf8"));
+    async function health() {
+      const response = await fetch(origin + "/harn/health", { signal: AbortSignal.timeout(1500) });
+      if (!response.ok) throw new Error("Harn health request failed");
+      const info = await response.json();
+      if (info.service !== "harn" || info.version !== runtime.version || info.root !== root) {
+        const error = new Error("Harn fixed address is occupied by a different version or workspace; stop an independently started service before upgrading");
+        error.retiring = info.service === "harn" && info.root === root;
+        throw error;
+      }
+    }
+    for (let attempt = 0; ; attempt++) {
+      try { await health(); return; } catch (error) {
+        if (error.cause?.code === "ECONNREFUSED") break;
+        const closing = ["ECONNRESET", "EPIPE", "UND_ERR_SOCKET"].includes(error.cause?.code);
+        if ((!error.retiring && !closing) || attempt >= 50 || disposed) throw error;
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+    if (disposed) throw new Error("Harn plugin disposed");
+    const binary = join(packageRoot, "skills/swe/bin", process.platform === "win32" ? "swe-cli.exe" : "swe-cli");
+    child = spawn(binary, ["system-design", "serve", "--root", root, "--expect-version", runtime.version, "--parent-stdin"], { stdio: ["pipe", "pipe", "pipe"] });
+    await new Promise((resolve, reject) => {
+      let output = "";
+      const timer = setTimeout(() => { child.kill(); reject(new Error("Harn startup timed out")); }, 15000);
+      child.once("error", error => { clearTimeout(timer); reject(error); });
+      child.once("exit", code => { clearTimeout(timer); reject(new Error("Harn exited: " + code)); });
+      child.stderr.resume();
+      child.stdout.on("data", data => {
+        output += data;
+        if (output.includes("\n")) {
+          clearTimeout(timer);
+          try {
+            const info = JSON.parse(output.split("\n")[0]);
+            if (!info.url) throw new Error("Harn failed to start: " + output);
+            resolve();
+          } catch (error) { reject(error); }
+        }
+      });
+    });
+    await health();
+  }
+  async function handler(req, res) {
+    if (req.method !== "GET" && req.method !== "HEAD") { res.writeHead(405); res.end(); return; }
+    try {
+      starting ||= connect().catch(error => { starting = undefined; throw error; });
+      await starting;
+      const requested = new URL(req.url, "http://dsh.invalid");
+      const upstream = await fetch(origin + requested.pathname + requested.search, {
+        method: req.method, redirect: "manual", signal: AbortSignal.timeout(120000),
+        headers: { "Sec-Fetch-Site": req.headers["sec-fetch-site"] || "same-origin" },
+      });
+      const headers = {};
+      for (const key of ["content-type", "content-security-policy", "cache-control", "x-content-type-options", "referrer-policy"]) {
+        if (upstream.headers.has(key)) headers[key] = upstream.headers.get(key);
+      }
+      const body = req.method === "HEAD" ? undefined : Buffer.from(await upstream.arrayBuffer());
+      res.writeHead(upstream.status, headers);
+      res.end(body);
+    } catch (error) {
+      starting = undefined;
+      res.writeHead(503, { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" });
+      res.end(error.message);
+    }
+  }
+  ctx.effect(() => {
+    const cleanup = [];
+    try {
+      cleanup.push(ctx.skills.register({ name: "swe", description, content: entry.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, ""), source: "bundled", path: join(skillRoot, "SKILL.md"), resourceBase: { kind: "directory", path: skillRoot } }));
+      for (const path of routes) cleanup.push(ctx.webServer.register({ kind: "exact", path, handler }));
+    } catch (error) { for (const remove of cleanup) remove(); throw error; }
+    return () => {
+      disposed = true;
+      for (const remove of cleanup) remove();
+      if (child?.exitCode === null) {
+        child.stdin.end();
+      }
+    };
+  }, "harn routes");
+}

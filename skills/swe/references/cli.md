@@ -4,6 +4,8 @@
 
 ## 安装与版本
 
+先识别安装来源。插件安装由宿主市场管理，使用宿主提供的 SWE 资源目录与其中的 CLI；DSH 平台安装脚本负责放置匹配二进制并校验摘要。不要将插件复制到项目、调用 harn 替换插件文件或修改宿主管理的缓存。插件更新和卸载均使用宿主入口。以下项目平台包约定保留给已有非插件安装。
+
 仅安装 `skills/swe`，adoption 接入能力、五个内部领域、共享规则、Schema 与 CLI 配套随包统一更新。领域不独立安装或登记版本；运行时工具版本仍由唯一的 `runtime.json` 固定。
 
 完整平台 Skill 包由构建脚本生成，已包含 CLI；harn 原样安装包内文件，不额外下载工具。`runtime.json` 由打包生成在包根，记录本平台 CLI 版本与摘要，不含下载地址，也不作为源码清单维护；二进制位于 `<共享SWE目录>/bin/swe-cli`，Windows 使用 `.exe`。各领域不各自复制二进制、Schema 或共享规则。缺失包内资源、工具或绑定不一致时明确无法检查，先按项目安装方式补齐，不切换旧脚本。进行中的范围基线继续使用创建它的工具，不通过升级重建基线掩盖改动。
@@ -16,7 +18,7 @@ CLI 版本随本次 Harn 构建写入平台包；仓库仅发布 Harn，完整 S
 | --- | --- | --- |
 | 业务模型 | `documents --kind business-model` | 格式与本地链接，抽象与规则仍由领域判断 |
 | YAML 层／模块设计 | `system-design validate`，局部层设计加 `--profile layers` | Schema、引用、路径冲突与声明依赖，不要求代码已存在 |
-| YAML 设计视图 | `system-design preview` / `render` | preview 校验固定版本后从 YAML 直接提供本机页面；render 仅用于离线导出，均不代表实现验收 |
+| YAML 设计视图 | `system-design serve` / `render` | serve 提供固定地址实时服务，DSH 使用架构页签；render 仅用于离线导出，旧版 preview 保留兼容，均不代表实现验收 |
 | YAML 下的生产代码或测试 | `system-design check` | 当前 YAML 作用域的目录与文件归属、必要文件始终检查；源码依赖按匹配到的语言适配器检查，当前内置 Go、TypeScript 和 C++ |
 | Markdown 系统设计及协议 | `documents`、`design` | 约定格式与显式关系，不等同 YAML 检查 |
 | Markdown 代码映射 | `structure` | 显式位置与入口，不解析源码依赖 |

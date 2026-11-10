@@ -6,6 +6,8 @@
 
 Harn 通过 SWE Skill 指导 Agent 完成业务建模、系统设计、代码实现、测试和交付，让代码改动遵循明确的模块边界与依赖规则，并提供可核验的检查结果。
 
+插件市场分发与固定地址架构服务正在接入：支持静态 HTML 导出、Go 本地实时服务和 DSH 固定路径代理。构建、运行及待完成的市场验收见[插件分发与架构服务](docs/plugin-distribution.md)。市场安装链路验收前保留现有安装方式。
+
 自有 Skill 保存在 `skills/<名称>/`，第三方 Skill 集中在 `skills/3rdparty/<名称>/`，统一由 `skills/index.json` 登记。两者均安装到 `.agents/skills/<名称>/`；兼容路径与使用方式见[安装指南](docs/usage.md#安装-skill)。
 
 ## 为什么需要 Harn

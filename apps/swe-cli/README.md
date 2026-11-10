@@ -1,5 +1,7 @@
 # SWE CLI
 
+固定地址、多项目实时服务使用 `swe-cli system-design serve --root <工作区> --expect-version <版本>`，浏览器访问 `http://127.0.0.1:47831/harn/`。DSH 使用同源固定路径代理，静态导出继续使用 `render`。详见[插件分发与架构服务](../../docs/plugin-distribution.md)。
+
 [系统设计](../../docs/system-design.md)中的确定性校验核心。通用核心负责 YAML、目录、文件归属与模块关系；语言适配器负责解释源码中的导入或引用。Skill 保存方法与规范，业务测试和构建仍由 Agent 按项目约定调用。
 
 ## 检查能力
